@@ -1,7 +1,10 @@
 import streamlit as st
 import requests
+from frontend.ui_components import load_custom_css
+load_custom_css()
 
-API_URL = "http://localhost:8000/api/"
+import os
+API_URL = os.environ.get("API_URL", "http://localhost:8000/api/")
 
 if "token" not in st.session_state or not st.session_state.token:
     st.warning("Please login from the main page first.")

@@ -1,9 +1,11 @@
 import streamlit as st
 import requests
 import pandas as pd
+from frontend.ui_components import load_custom_css
 import plotly.express as px
 
-API_URL = "http://localhost:8000/api/"
+import os
+API_URL = os.environ.get("API_URL", "http://localhost:8000/api/")
 
 st.set_page_config(page_title="TRACERBLOCK", layout="wide", page_icon="🔗")
 

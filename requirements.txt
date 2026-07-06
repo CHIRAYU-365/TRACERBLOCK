@@ -11,3 +11,6 @@ requests
 py-solc-x
 plotly
 pandas
+gunicorn
+scikit-learn
+geopy

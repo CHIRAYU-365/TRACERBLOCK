@@ -60,3 +60,29 @@ class TrackingEventViewSet(viewsets.ModelViewSet):
             
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+from rest_framework.decorators import api_view
+from .ai_insights import predict_stockout, calculate_supplier_score, estimate_carbon_emissions
+
+@api_view(['GET'])
+def get_stockout_prediction(request, inventory_id):
+    try:
+        data = predict_stockout(inventory_id)
+        return Response(data)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+@api_view(['GET'])
+def get_supplier_score(request, supplier_id):
+    try:
+        data = calculate_supplier_score(supplier_id)
+        return Response(data)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+@api_view(['GET'])
+def get_carbon_emissions(request, product_id):
+    try:
+        data = estimate_carbon_emissions(product_id)
+        return Response(data)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
