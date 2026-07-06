@@ -1,0 +1,13 @@
+django
+djangorestframework
+psycopg2
+web3
+django-cors-headers
+python-dotenv
+django-environ
+djangorestframework-simplejwt
+streamlit
+requests
+py-solc-x
+plotly
+pandas
