@@ -140,26 +140,14 @@ else:
     st.info("No escrow details available.")
 
 st.markdown("---")
-with st.expander("🔑 Proof-of-Delivery Cryptographic Signatures", expanded=False):
-    st.markdown("Verify delivery confirmation receipts once orders reach DELIVERED status:")
-    delivered_orders = [o for o in orders if o['status'] == 'DELIVERED']
-    if delivered_orders:
-        for o in delivered_orders:
-            sig_data = f"{o['id']}-{o['buyer_name']}-{o['seller_name']}-DELIVERED"
-            sig_hash = hashlib.sha256(sig_data.encode('utf-8')).hexdigest()
-            st.code(f"Order #{o['id']} PoD Receipt:\n ├─ Signer Address: 0x90F8bf... \n └─ Signature Proof: 0x{sig_hash[:32]}...")
-    else:
-        st.info("No orders currently DELIVERED to verify signatures.")
-
-st.markdown("---")
-st.subheader("⌛ Block-Height Expiry Monitor")
+st.subheader("⌛ Procurement Expiry Monitor")
 st.markdown("Contract rule: POs expire if not APPROVED within **30 blocks** of creation.")
 if orders:
     for o in orders:
         if o['status'] == 'PENDING':
             st.warning(f"Order #{o['id']}: 14/30 blocks remaining until automatic on-chain cancellation.")
         elif o['status'] in ['APPROVED', 'SHIPPED', 'DELIVERED']:
-            st.success(f"Order #{o['id']}: Mined on Block 1240. Expiry rule deactivated. ✅")
+            st.success(f"Order #{o['id']}: Expiry rule deactivated. ✅")
 else:
     st.info("No active PO expiries to monitor.")
 
@@ -171,7 +159,7 @@ with st.expander("⚖️ Escrow Dispute Arbitrator (Admin override)", expanded=F
         selected_disp = st.selectbox("Select disputed order to override", list(disputed_orders.keys()))
         override_action = st.selectbox("Arbiter Command", ["Unlock Escrow (Refund Buyer)", "Release Escrow (Pay Seller)"])
         if st.button("Execute Arbitration Command"):
-            st.success(f"Arbitration executed on-chain! Order #{disputed_orders[selected_disp]} escrow status modified. Transaction mined.")
+            st.success(f"Arbitration executed! Order #{disputed_orders[selected_disp]} escrow status has been resolved.")
     else:
         st.info("No active orders in disputable states.")
 

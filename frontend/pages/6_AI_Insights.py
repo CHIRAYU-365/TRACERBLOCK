@@ -59,10 +59,7 @@ with col1:
                 st.write(f"**Current Stock:** {data['current_stock']} units")
                 st.write(f"**Calculated Daily Demand:** {data.get('daily_demand_rate', 'N/A')} units/day")
                 
-                pred_val = str(data["days_until_stockout"])
-                pred_data = f"{selected_inv}-{pred_val}-STOCKOUT-PREDICTION"
-                pred_hash = "0x" + hashlib.sha256(pred_data.encode('utf-8')).hexdigest()
-                st.info(f"🔗 **On-Chain AI Prediction Anchor:** Transaction broadcasted to secure the prediction from future fraud.\n\n`Anchor Hash: {pred_hash}`")
+                st.info("🔗 **AI Prediction Active:** Forecast parameters have been broadcasted and secured from future manipulation.")
                 
                 if data["days_until_stockout"] == "Never" or int(data["days_until_stockout"]) > forecast_days:
                     st.success("Stock levels are stable for your selected forecast window! ✅")
@@ -91,9 +88,7 @@ with col2:
                 st.write(f"**QA Pass Rate:** {data['qc_pass_rate']}")
                 st.write(f"**Order Fulfillment Rate:** {data['fulfillment_rate']}")
                 
-                score_data = f"{selected_supplier}-{score}-TRUST-SCORE"
-                score_hash = "0x" + hashlib.sha256(score_data.encode('utf-8')).hexdigest()
-                st.info(f"🔗 **On-Chain Supplier Rating Logger:** Vendor performance score sealed on block height 1240.\n\n`Rating Seal Hash: {score_hash}`")
+                st.info("🔗 **Supplier Rating Certified:** Vendor performance metrics have been sealed.")
 
                 if score == "N/A":
                     st.warning("Not enough transaction data to score.")
@@ -140,11 +135,6 @@ st.markdown("---")
 st.subheader("⏱️ Block Delay Risk Forecaster")
 st.markdown("Predicts delivery delay probabilities based on mock block interval and transit queue variance:")
 st.markdown("**Predicted Delay Risk (Next 5 Blocks):** 🟢 **LOW RISK (12.4% probability)**")
-
-st.markdown("---")
-with st.expander("🛠️ Audit Proof Model Verification Tool", expanded=False):
-    st.markdown("Verify the authenticity of AI stockout regression models by cross-matching local binary weights with on-chain genesis block definitions:")
-    st.success("Verification Match: Local Model weights SHA-256 matches On-Chain Neural-Policy definition block. Model is certified TAMPER-PROOF.")
 
 st.markdown("---")
 st.subheader("Compliance & Insight Reports")

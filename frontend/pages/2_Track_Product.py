@@ -95,8 +95,6 @@ if search_btn or st.session_state.get('track_id'):
         else:
             st.warning("Locked: Custody change requires signatures from both logistics and distributor accounts.")
 
-        show_verification = st.checkbox("Show Blockchain Cryptographic Proof Panel", value=True)
-        
         st.markdown("### IoT Telemetry History")
         if product.get('events'):
             tel_records = []
@@ -113,7 +111,7 @@ if search_btn or st.session_state.get('track_id'):
                               title="IoT Container Sensors - Live Transit logs",
                               color_discrete_sequence=["#00f2fe", "#a18cd1"])
                 fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig, width="stretch")
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No IoT sensor recordings found for this product.")
 
@@ -131,45 +129,26 @@ if search_btn or st.session_state.get('track_id'):
                                    title="Product Checkpoints Journey Path",
                                    color_discrete_sequence=px.colors.qualitative.Dark2)
                 fig_route.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig_route, width="stretch")
-                
-            if show_verification:
-                st.markdown("### 🔗 Cryptographic Provenance Hash Audit")
-                prev_hash = "0x0000000000000000000000000000000000000000000000000000000000000000"
-                for idx, ev in enumerate(product['events']):
-                    event_str = f"{ev['id']}-{ev['status']}-{ev['location']}-{prev_hash}"
-                    current_hash = "0x" + hashlib.sha256(event_str.encode('utf-8')).hexdigest()
-                    st.code(f"Block #{idx+1} [Checkpoint: {ev['status']}]\n ├─ Prev Block Hash: {prev_hash[:26]}...\n ├─ Payload Context: {ev['status']} at {ev['location']}\n └─ Generated Hash: {current_hash[:26]}...")
-                    prev_hash = current_hash
+                st.plotly_chart(fig_route, use_container_width=True)
 
-            st.markdown("### Immutable Checkpoints Chain")
+            st.markdown("### Checkpoint History Ledger")
             df_events = pd.DataFrame(product['events'])
             if not df_events.empty:
-                st.dataframe(df_events[['id', 'status', 'location', 'timestamp', 'tx_hash']], width="stretch")
+                st.dataframe(df_events[['id', 'status', 'location', 'timestamp']], use_container_width=True)
                 
                 recalls = [ev for ev in product['events'] if any(t['temperature_c'] > 30 or t['temperature_c'] < 2 for t in ev.get('telemetry', []))]
                 if recalls:
-                    st.error("⚠️ **Solidity Rules Evaluator: [RECALLED State Triggered]** Temperature violations detected (outside safe 2°C - 30°C range). Smart Contract has automatically locked this batch on-chain.")
+                    st.error("⚠️ **Fulfillment Rules Violation:** Temperature violations detected (outside safe 2°C - 30°C range). Reorder required.")
                 else:
-                    st.success("Solidity Rules Evaluator: [PASSED] Product temperatures conform to contract parameters. ✅")
-                
-                with st.expander("🛠️ Solidity Event Log Decoder", expanded=False):
-                    for ev in product['events']:
-                        st.json({
-                            "event": "EventLogged",
-                            "productId": pid,
-                            "status": ev['status'],
-                            "location": ev['location'],
-                            "tx_hash": ev['tx_hash'] or "N/A",
-                            "timestamp": ev['timestamp']
-                        })
+                    st.success("Fulfillment Rules State: Product temperatures conform to contract parameters. ✅")
                             
-                csv_data = df_events[['status', 'location', 'timestamp', 'tx_hash']].to_csv(index=False).encode('utf-8')
+                csv_data = df_events[['status', 'location', 'timestamp']].to_csv(index=False).encode('utf-8')
                 st.download_button(
                     label="📥 Export Provenance Chain to CSV",
                     data=csv_data,
                     file_name=f"product_{pid}_provenance_report.csv",
-                    mime="text/csv"
+                    mime="text/csv",
+                    use_container_width=True
                 )
             else:
                 st.info("No checkpoint records found.")

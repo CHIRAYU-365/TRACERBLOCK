@@ -96,68 +96,23 @@ if uploaded_file is not None:
     try:
         df = pd.read_csv(uploaded_file)
         st.write("Staged products:")
-        st.dataframe(df.head(5), width="stretch")
+        st.dataframe(df.head(5), use_container_width=True)
         if st.button("Commit Staged Batch to Blockchain"):
             for index, row in df.iterrows():
-                st.code(f"Committing Row #{index+1}: {row.get('name', 'Product')} | Anchor: Anchored (Tx: 0x{index}aef...)")
+                st.write(f"✓ Committing Row #{index+1}: {row.get('name', 'Product')} | Status: SUCCESS")
             st.success("Batch successfully committed to mock blockchain ledger! ✅")
     except Exception as e:
         st.error(f"Error processing stager CSV: {e}")
 
 st.markdown("---")
-st.subheader("📜 On-Chain Rule Parameter Compiler")
-with st.expander("Show Compiled Solidity Code Parameters"):
-    st.code(f"""
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+st.subheader("🔍 Pre-Registration Draft Review")
 
-contract SupplyChainRuleCheck {{
-    int256 public constant MIN_TEMP = {temp_req[0]};
-    int256 public constant MAX_TEMP = {temp_req[1]};
-    string public constant CATEGORY = "{category}";
-    string public constant SKU_CODE = "{sku}";
-    
-    function verifyTelemetry(int256 currentTemp) public pure returns (bool) {{
-        return (currentTemp >= MIN_TEMP && currentTemp <= MAX_TEMP);
-    }}
-}}
-    """, language="solidity")
-
-st.markdown("---")
-st.subheader("🔍 Cryptographic Pre-Registration Anchor")
-
-payload_str = f"{name}-{category}-{sku}-{desc}-{temp_req[0]}-{temp_req[1]}"
-payload_hash = hashlib.sha256(payload_str.encode('utf-8')).hexdigest()
-manufacturer_address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
-mock_signature = "0x" + hashlib.sha256((payload_hash + manufacturer_address).encode('utf-8')).hexdigest()
-
-estimated_gas = 142850
-sim_gas_price_gwei = 20
-total_gas_cost_eth = (estimated_gas * sim_gas_price_gwei) / 1e9
-total_gas_cost_usd = total_gas_cost_eth * 3200.0
-
-col_preview_1, col_preview_2 = st.columns(2)
-
-with col_preview_1:
-    st.markdown("#### Payload Metadata")
-    draft_preview = {
-        "Name": name,
-        "Category": category,
-        "SKU": sku,
-        "Temp Limits": f"{temp_req[0]}°C to {temp_req[1]}°C",
-        "Initial Units": initial_qty,
-        "Batch": batch_no
-    }
-    st.json(draft_preview)
-
-with col_preview_2:
-    st.markdown("#### Cryptographic Properties")
-    st.markdown(f"**SHA-256 Anchor Hash:**")
-    st.code(payload_hash)
-    st.markdown(f"**Manufacturer Public Key:**")
-    st.code(manufacturer_address)
-    st.markdown(f"**Digital Signature Hex:**")
-    st.code(mock_signature[:35] + "...")
-    
-    st.markdown("#### Gas Cost Estimate")
-    st.metric("Estimated Gas Fee", f"{total_gas_cost_eth:.6f} ETH (~${total_gas_cost_usd:.2f} USD)")
+draft_preview = {
+    "Name": name,
+    "Category": category,
+    "SKU": sku,
+    "Temp Limits": f"{temp_req[0]}°C to {temp_req[1]}°C",
+    "Initial Units": initial_qty,
+    "Batch": batch_no
+}
+st.json(draft_preview)

@@ -133,18 +133,8 @@ else:
     st.info("No QA reports logged yet.")
 
 st.markdown("---")
-st.subheader("🔗 Immutable QA Certificate Anchor")
-if qa_reports:
-    for q in qa_reports:
-        cert_data = f"{q['id']}-{q['product_name']}-{q['passed']}-{q['notes']}"
-        cert_hash = hashlib.sha256(cert_data.encode('utf-8')).hexdigest()
-        st.code(f"Audit #{q['id']} Certificate Hash Anchor:\n └─ SHA-256 Proof: 0x{cert_hash} (Anchored & Sealed)")
-else:
-    st.info("No audit certificates to hash yet.")
-
-st.markdown("---")
-st.subheader("📜 Solidity Audit Score Rules")
-st.markdown("Solidity rule: Inspections with score < 70 are flagged for recall.")
+st.subheader("📜 Quality Audit Rules")
+st.markdown("Fulfillment rule: Inspections with score < 70 are flagged for recall.")
 if qa_reports:
     for q in qa_reports:
         score_val = 85
@@ -154,34 +144,23 @@ if qa_reports:
             except Exception:
                 pass
         if score_val < 70:
-            st.error(f"Audit #{q['id']} [Score: {score_val}] triggers rule breach: Flagged for Recall on-chain. 🚨")
+            st.error(f"Audit #{q['id']} [Score: {score_val}] triggers rule breach: Flagged for Recall. 🚨")
         else:
             st.success(f"Audit #{q['id']} [Score: {score_val}]: Conforms to safety rules. ✅")
 else:
     st.info("No audit scores to run Solidity rules engine against.")
 
 st.markdown("---")
-with st.expander("🔑 Certified Auditor Public Key Verification", expanded=False):
-    st.markdown("Verify the cryptographic credentials of the inspector performing the check:")
-    if qa_reports:
-        for q in qa_reports:
-            sig_data = f"{q['inspector_name']}-QA-ROLE"
-            key_hash = hashlib.sha256(sig_data.encode('utf-8')).hexdigest()
-            st.code(f"Auditor: {q['inspector_name']} | Role: Quality Assurance | Public Key: 0x{key_hash[:24]}... | Verified: Approved ✅")
-    else:
-        st.info("No inspectors to verify.")
-
-st.markdown("---")
-st.subheader("🚨 On-Chain Failed Audits Recall Logs")
+st.subheader("🚨 Product Recall Logs")
 failed_audits = [q for q in qa_reports if not q['passed']]
 if failed_audits:
     for q in failed_audits:
-        st.error(f"Recall State Active: Product '{q['product_name']}' failed QA by {q['inspector_name']}. Receipt Tx: Mined (Hash: 0x{hashlib.sha256(str(q['id']).encode('utf-8')).hexdigest()[:20]}...)")
+        st.error(f"Recall State Active: Product '{q['product_name']}' failed QA by {q['inspector_name']}.")
 else:
-    st.success("No failed QA recall logs present on-chain. All audits conform to quality guidelines. ✅")
+    st.success("No failed QA recall logs present. All audits conform to quality guidelines. ✅")
 
 st.markdown("---")
-st.subheader("📈 Block-Height Audit Score progression")
+st.subheader("📈 Quality Score Progression")
 if qa_reports:
     prog_records = []
     for idx, q in enumerate(qa_reports):
@@ -191,11 +170,11 @@ if qa_reports:
                 score_val = int(q['notes'].split("[Score: ")[1].split("/100]")[0])
             except Exception:
                 pass
-        prog_records.append({"Simulated Block": f"Block #{idx+1240}", "Score": score_val})
+        prog_records.append({"Inspection index": f"Audit #{idx+1}", "Score": score_val})
     df_prog = pd.DataFrame(prog_records)
-    fig_prog = px.line(df_prog, x="Simulated Block", y="Score", title="Audit Quality Score over blocks sequence",
+    fig_prog = px.line(df_prog, x="Inspection index", y="Score", title="Audit Quality Score sequence",
                        color_discrete_sequence=["#e67e22"])
     fig_prog.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)")
-    st.plotly_chart(fig_prog, width="stretch")
+    st.plotly_chart(fig_prog, use_container_width=True)
 else:
-    st.info("No telemetry logs to map quality progression over blocks.")
+    st.info("No telemetry logs to map quality progression.")

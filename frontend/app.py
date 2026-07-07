@@ -89,8 +89,6 @@ def login():
         st.markdown('</div>', unsafe_allow_html=True)
 
 def dashboard():
-    st.markdown('<div class="blockchain-indicator">⛓️ Private Blockchain Node: 127.0.0.1:8545</div> <div class="verified-badge">State: ACTIVE</div>', unsafe_allow_html=True)
-    
     st.title("Executive Dashboard 📊")
     st.markdown("Real-time overview and analytical insights of the TRACERBLOCK supply chain.")
     
@@ -101,26 +99,11 @@ def dashboard():
             products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
             inventory = get_cached_data(f"{API_URL}supply_chain/inventory/", "inventory_cache", headers)
             orders = get_cached_data(f"{API_URL}supply_chain/orders/", "orders_cache", headers)
-            
-            try:
-                node_res = requests.get("http://127.0.0.1:8545/stats")
-                node_stats = node_res.json() if node_res.status_code == 200 else {}
-            except Exception:
-                node_stats = {}
         except Exception as e:
             st.error(f"Handshake failed: {e}")
             st.stop()
             
     try:
-        if node_stats:
-            st.markdown("#### 🔗 Live Blockchain Network Monitor")
-            ncol1, ncol2, ncol3, ncol4 = st.columns(4)
-            ncol1.metric("Blockchain Node Latency", f"{node_stats.get('node_latency_ms', 12)} ms")
-            ncol2.metric("Current Block Height", f"#{node_stats.get('block_number', 1240)}")
-            ncol3.metric("Simulated Gas Price", f"{node_stats.get('gas_price_gwei', 20)} Gwei")
-            ncol4.metric("Ecosystem Peer Count", f"{node_stats.get('peer_count', 8)} Nodes")
-            st.markdown("---")
-
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Registered Products", len(products))
         total_stock = sum(item['quantity'] for item in inventory)
@@ -128,17 +111,6 @@ def dashboard():
         col3.metric("Total Orders Placed", len(orders))
         
         st.markdown("---")
-        st.subheader("⚡ Off-Chain State Channel Optimization (Gas Savings)")
-        st.markdown("Estimates gas costs and USD fees saved by offloading intermediate telemetry sensor check-ins from the root chain:")
-        saved_txs = len(products) * 4
-        saved_gas = saved_txs * 21000
-        saved_eth = (saved_gas * 20) / 1e9
-        saved_usd = saved_eth * 3200.0
-        
-        scol1, scol2, scol3 = st.columns(3)
-        scol1.metric("Off-Chain Operations Managed", f"{saved_txs} skipped Txs")
-        scol2.metric("Equivalent Gas Fees Saved", f"{saved_eth:.4f} ETH")
-        scol3.metric("Cost Savings Value (USD)", f"${saved_usd:,.2f} USD")
         
         recalled_ids = []
         for p in products:
@@ -158,26 +130,6 @@ def dashboard():
                 st.markdown(f"- **Recalled Product**: {item} - *Reason: On-Chain telemetry exceeded 2°C - 30°C range.*")
         else:
             st.success("Solidity Engine State: No on-chain recalls registered. All contract rules satisfied. ✅")
-
-        with st.expander("📝 Global Ledger Transaction & Mined Blocks Registry", expanded=False):
-            st.markdown("Below are the last cryptographic transactions and newly mined blocks recorded on the private ledger:")
-            
-            blocks_history = node_stats.get("blocks", [])
-            if blocks_history:
-                st.markdown("#### 📦 Recently Mined Blocks")
-                for b in reversed(blocks_history):
-                    ts_val = int(b.get("timestamp", "0x0"), 16)
-                    import time
-                    time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts_val))
-                    st.code(f"Block #{int(b['number'], 16)+1240} | Hash: {b['hash']}\n ├─ Parent Hash: {b['parentHash']}\n ├─ Transactions: {b['transactions']}\n └─ Mined At: {time_str}")
-            
-            txs = node_stats.get("transactions", [])
-            if txs:
-                st.markdown("#### 📝 Raw Transaction Hashes")
-                for i, tx in enumerate(reversed(txs)):
-                    st.code(f"[Tx #{i+1}] {tx} | Status: CONFIRMED | Gas Used: 21,000 | Network: 1337-Net")
-            else:
-                st.info("No transaction logs anchored on the node yet. Perform some actions to populate.")
 
         st.markdown("### Interactive Filters & Analytics")
         filter_col1, filter_col2 = st.columns(2)
@@ -242,40 +194,6 @@ def dashboard():
             else:
                 st.info("No order data available.")
 
-        st.markdown("### On-Chain Activity Velocity")
-        block_activity = {}
-        for p in products:
-            for ev in p.get('events', []):
-                time_key = ev['timestamp'][:16]
-                block_activity[time_key] = block_activity.get(time_key, 0) + 1
-                
-        if block_activity:
-            df_act = pd.DataFrame(list(block_activity.items()), columns=['Time', 'Transactions'])
-            df_act = df_act.sort_values('Time').tail(10)
-            fig_act = px.area(df_act, x='Time', y='Transactions', title="Ecosystem On-Chain Activity Velocity (Simulated Block-to-Block)",
-                              color_discrete_sequence=["#00f2fe"])
-            fig_act.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(fig_act, width="stretch")
-        else:
-            st.info("Insufficient transactional traffic to map activity velocity yet.")
-
-        st.markdown("#### 🔍 Node Explorer / Cryptographic Hash Auditor")
-        audit_hash = st.text_input("Enter Transaction Hash to Verify Node Validity", placeholder="e.g. 0xeef08a9f6...")
-        if audit_hash:
-            is_valid = audit_hash in node_stats.get("transactions", []) or (audit_hash.startswith("0x") and len(audit_hash) == 66)
-            if is_valid:
-                st.success("✅ Transaction status: VERIFIED on Mock Ethereum Node | Block Height: 1240 | Confirmations: 12")
-                st.json({
-                    "tx_hash": audit_hash,
-                    "status": "0x1 (Success)",
-                    "blockNumber": "1240",
-                    "gasUsed": "21000",
-                    "cumulativeGasUsed": "21000",
-                    "from": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
-                })
-            else:
-                st.error("❌ Cryptographic signature match failed: Transaction hash not recorded on active node.")
-
         low_stock_items = [item for item in inventory if item['quantity'] <= item.get('low_stock_threshold', 10)]
         with st.expander("⚠️ Critical Stock Alerts & Reorder Advisor", expanded=True):
             if low_stock_items:
@@ -294,7 +212,7 @@ def dashboard():
                 data=csv_data,
                 file_name="tracerblock_inventory_report.csv",
                 mime="text/csv",
-                width="stretch"
+                use_container_width=True
             )
             
     except Exception as e:

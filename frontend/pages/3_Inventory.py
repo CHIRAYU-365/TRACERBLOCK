@@ -142,22 +142,13 @@ else:
     st.info("No capacity allocation logs available.")
 
 st.markdown("---")
-with st.expander("🔑 On-Chain Custody Transfer Ledger", expanded=False):
-    st.markdown("Verifies who currently holds physical & legal custody of inventory batches:")
-    if inventory:
-        for item in inventory:
-            st.code(f"Product: {item['product_name']} | Custodian Public Address: 0x90F8bf6A47... | Location: WH #{item['warehouse']} | State: Anchored & Verified")
-    else:
-        st.info("No active stock custody logs recorded.")
-
-st.markdown("---")
-st.subheader("🚨 On-Chain Safety Stock Rule Trigger")
+st.subheader("🚨 Stock Level Safety Alerts")
 low_stock_events = [item for item in inventory if item['quantity'] <= item.get('low_stock_threshold', 10)]
 if low_stock_events:
     for item in low_stock_events:
-        st.error(f"**{item['product_name']}** stock low ({item['quantity']} units). Contract emitted: `ReorderRequestEvent(ProductID={item['product']}, safetyStock={item['low_stock_threshold']})` ✅")
+        st.error(f"⚠️ **{item['product_name']}** stock low ({item['quantity']} units). Safety stock threshold was breached.")
 else:
-    st.success("Solidity rules engine state: All facility stock levels satisfy the safety stock parameters. ✅")
+    st.success("Fulfillment Rules State: All facility stock levels satisfy the safety stock parameters. ✅")
 
 st.markdown("---")
 st.subheader("🌡️ IoT Facility Safety Index")
@@ -166,12 +157,3 @@ if warehouses:
         st.markdown(f"**{wh['name']} Stability Rating:** ⭐ **98/100** (IoT sensors state: Optimal Temperature & Humidity)")
 else:
     st.info("No telemetry indices mapped.")
-
-st.markdown("---")
-with st.expander("🛠️ Differential On-Chain Reconciliation Audit", expanded=False):
-    st.markdown("Compares Django PostgreSQL database records with cryptographic mock blockchain receipt balances:")
-    if inventory:
-        for item in inventory:
-            st.success(f"Audit Match: DB Stock ({item['quantity']}) matches On-Chain receipts ledger ({item['quantity']}) | Hash proof: verified")
-    else:
-        st.info("No stock records to reconcile.")
