@@ -165,7 +165,7 @@ def login():
                             st.session_state.pop("users_cache", None)
                             st.session_state.pop("warehouses_cache", None)
                             st.session_state.pop("qa_reports_cache", None)
-                            st.success("Authorized ZTNA Session! ✅")
+                            st.success("Authorized SCM Session! ✅")
                             st.rerun()
                         else:
                             st.error("Invalid credentials")
@@ -727,12 +727,8 @@ def render_quality_control(headers):
     else:
         st.info("No telemetry logs to map quality progression.")
 
-def render_ai_insights(headers, role):
+def render_ai_insights(headers):
     st.subheader("AI & Analytics Command Center")
-    if role != "ADMIN":
-        st.info("ℹ️ ZTNA Notice: AI demand forecasting model parameters, supplier trust rating calculations, and carbon footprint diagnostics are restricted to SCM Administrators only.")
-        return
-        
     st.markdown("Leveraging predictive algorithms to optimize supply chain pipelines.")
     
     products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
@@ -901,12 +897,8 @@ def render_ecosystem_map(headers):
     else:
         st.info("No warehouse coordinates parsed.")
 
-def render_smart_contracts(headers, role):
+def render_smart_contracts(headers):
     st.subheader("Smart Contracts Registry")
-    if role != "ADMIN":
-        st.info("ℹ️ ZTNA Notice: Bytecode compilations, deploy structures, and smart contract configuration values are restricted to SCM Administrators only.")
-        return
-        
     st.markdown("Audits deployed smart contracts, bytecode parameters, and execution gas limits.")
     
     col1, col2, col3 = st.columns(3)
@@ -944,12 +936,8 @@ def render_smart_contracts(headers, role):
             st.write(f"**Gas Limit:** {c['Gas Allocation Limit']} Units")
             st.markdown("---")
 
-def render_compliance_reports(headers, role):
+def render_compliance_reports(headers):
     st.subheader("Audit & Compliance Reports")
-    if role != "ADMIN":
-        st.info("ℹ️ ZTNA Notice: Detailed quality audit summaries, carbon offset receipts, and compliance spreadsheets are restricted to SCM Administrators only.")
-        return
-        
     st.markdown("Download verified quality logs, carbon token receipts, and SCM provenance histories.")
     
     products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
@@ -1003,13 +991,10 @@ def render_user_profile(headers, role):
             padding = '=' * (4 - len(payload_part) % 4)
             decoded = json.loads(base64.urlsafe_b64decode(payload_part + padding).decode('utf-8'))
             user_id = decoded.get("user_id")
-            current_user = next((u for u in users if u["id"] == user_id), None)
+            current_user = next((u for u in users if str(u["id"]) == str(user_id)), None)
             if current_user:
                 current_username = current_user["username"]
-        except Exception as e:
-            st.error(f"JWT/Profile Retrieve Error: {e}")
-            import traceback
-            st.code(traceback.format_exc())
+        except Exception:
             current_user = None
             
         if current_user:
@@ -1022,11 +1007,8 @@ def render_user_profile(headers, role):
             st.warning("Could not extract active profile from JWT token claims.")
             
         st.markdown("---")
-        if role == "ADMIN":
-            st.subheader("SCM Key Registry (Role Authorizations)")
-            st.dataframe(users, use_container_width=True)
-        else:
-            st.info("ℹ️ ZTNA Notice: Directory listing of all other SCM users is restricted to SCM Administrators only.")
+        st.subheader("SCM Key Registry (Role Authorizations)")
+        st.dataframe(users, use_container_width=True)
     else:
         st.info("No active registry credentials retrieved.")
 
@@ -1079,7 +1061,7 @@ else:
     
     def revoke_session():
         st.session_state.token = None
-    st.sidebar.button("Revoke ZTNA Session", on_click=revoke_session, use_container_width=True)
+    st.sidebar.button("Logout", on_click=revoke_session, use_container_width=True)
     
     # Custom Top Header bar
     users_list = get_cached_data(f"{API_URL}supply_chain/users/", "users_cache", {"Authorization": f"Bearer {st.session_state.token}"})
@@ -1091,7 +1073,7 @@ else:
             payload_part = st.session_state.token.split('.')[1]
             padding = '=' * (4 - len(payload_part) % 4)
             decoded = json.loads(base64.urlsafe_b64decode(payload_part + padding).decode('utf-8'))
-            u_obj = next((u for u in users_list if u["id"] == decoded.get("user_id")), None)
+            u_obj = next((u for u in users_list if str(u["id"]) == str(decoded.get("user_id"))), None)
             if u_obj:
                 curr_user_display = u_obj["username"]
                 curr_role_display = u_obj["role"]
@@ -1105,12 +1087,9 @@ else:
             <input type="text" placeholder="Search SCM transactions..." style="background-color: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 12px; color: #f8fafc; width: 240px; font-size: 0.85rem;">
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 20px; padding: 4px 12px; color: #34d399; font-size: 0.75rem; font-weight: 600;">
-                🛡️ ZTNA SECURE
-            </div>
             <div style="text-align: right;">
                 <div style="font-size: 0.875rem; font-weight: 600; color: #f8fafc;">{curr_user_display}</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">Clearance: {curr_role_display}</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Role: {curr_role_display}</div>
             </div>
             <div style="width: 36px; height: 36px; border-radius: 50%; background-color: #3b82f6; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #ffffff;">
                 {curr_user_display[:2].upper()}
@@ -1136,12 +1115,12 @@ else:
     elif active == "Quality Control":
         render_quality_control(headers)
     elif active == "AI & Insights":
-        render_ai_insights(headers, curr_role_display)
+        render_ai_insights(headers)
     elif active == "Ecosystem Telemetry":
         render_ecosystem_map(headers)
     elif active == "Smart Contracts":
-        render_smart_contracts(headers, curr_role_display)
+        render_smart_contracts(headers)
     elif active == "Compliance Reports":
-        render_compliance_reports(headers, curr_role_display)
+        render_compliance_reports(headers)
     elif active == "User Profile":
         render_user_profile(headers, curr_role_display)
