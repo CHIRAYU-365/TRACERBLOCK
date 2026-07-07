@@ -1,5 +1,8 @@
 import streamlit as st
 import requests
+import hashlib
+import pandas as pd
+
 try:
     from frontend.ui_components import load_custom_css, get_cached_data
 except ModuleNotFoundError:
@@ -31,30 +34,28 @@ headers = {"Authorization": f"Bearer {st.session_state.token}"}
 st.title("Register New Product 📦")
 st.markdown("Add a new product to the portal. This will register the item, define IoT parameters, and set up initial stock levels.")
 
-# Fetch warehouses dynamically (Optimized Buffering)
 warehouses = get_cached_data(f"{API_URL}supply_chain/warehouses/", "warehouses_cache", headers)
 
 wh_options = {"None": None}
 for wh in warehouses:
     wh_options[f"{wh['name']} ({wh['location']})"] = wh['id']
 
-# Main Form (Component 2)
 with st.form("add_product_form"):
     col_a, col_b = st.columns(2)
     
     with col_a:
-        name = st.text_input("Product Name", placeholder="e.g. Smart Watch Active") # Component 3
-        category = st.selectbox("Product Category", ["Electronics", "Pharmaceuticals", "Food & Beverage", "Industrial", "Consumer Goods"]) # Component 4
-        sku = st.text_input("SKU / Serial Code", placeholder="e.g. SKU-10029-A") # Component 5
-        temp_req = st.slider("Safe Operating Temperature (°C)", -40, 60, (2, 30)) # Component 6
+        name = st.text_input("Product Name", placeholder="e.g. Smart Watch Active")
+        category = st.selectbox("Product Category", ["Electronics", "Pharmaceuticals", "Food & Beverage", "Industrial", "Consumer Goods"])
+        sku = st.text_input("SKU / Serial Code", placeholder="e.g. SKU-10029-A")
+        temp_req = st.slider("Safe Operating Temperature (°C)", -40, 60, (2, 30))
         
     with col_b:
-        desc = st.text_area("Product Description", placeholder="Enter specifications, shipping constraints...") # Component 7
-        wh_id = st.selectbox("Target Warehouse (for initial stock allocation)", list(wh_options.keys())) # Component 8
-        initial_qty = st.number_input("Initial Inventory Quantity", min_value=0, value=0, step=10) # Component 9
-        batch_no = st.text_input("Batch / Lot Number", placeholder="e.g. LOT-2026-07") # Component 10
+        desc = st.text_area("Product Description", placeholder="Enter specifications, shipping constraints...")
+        wh_id = st.selectbox("Target Warehouse (for initial stock allocation)", list(wh_options.keys()))
+        initial_qty = st.number_input("Initial Inventory Quantity", min_value=0, value=0, step=10)
+        batch_no = st.text_input("Batch / Lot Number", placeholder="e.g. LOT-2026-07")
 
-    submit = st.form_submit_button("Register Product") # Component 11
+    submit = st.form_submit_button("Register Product")
 
     if submit:
         if not name:
@@ -66,14 +67,12 @@ with st.form("add_product_form"):
             }
             res = requests.post(f"{API_URL}supply_chain/products/", json=product_data, headers=headers)
             if res.status_code == 201:
-                # Invalidate caches
                 st.session_state.pop("products_cache", None)
                 st.session_state.pop("inventory_cache", None)
                 
                 product_id = res.json()["id"]
                 st.success(f"Product '{name}' successfully registered! (ID: {product_id}) ✅")
                 
-                # Automatically allocate initial stock if a warehouse is selected
                 selected_wh_id = wh_options[wh_id]
                 if selected_wh_id is not None and initial_qty > 0:
                     stock_data = {
@@ -89,26 +88,22 @@ with st.form("add_product_form"):
             else:
                 st.error(f"Failed to register product: {res.text}")
 
-# Bulk Upload Section with On-Chain Stager (Feature 3)
 st.markdown("---")
 st.subheader("📦 Bulk On-Chain CSV Stager")
 uploaded_file = st.file_uploader("Upload product listings CSV for sequential on-chain staging", type=["csv"])
 if uploaded_file is not None:
     st.info("Reading CSV records and calculating signatures...")
-    import pandas as pd
     try:
         df = pd.read_csv(uploaded_file)
         st.write("Staged products:")
         st.dataframe(df.head(5), width="stretch")
         if st.button("Commit Staged Batch to Blockchain"):
-            # Simulate sequential mining
             for index, row in df.iterrows():
                 st.code(f"Committing Row #{index+1}: {row.get('name', 'Product')} | Anchor: Anchored (Tx: 0x{index}aef...)")
             st.success("Batch successfully committed to mock blockchain ledger! ✅")
     except Exception as e:
         st.error(f"Error processing stager CSV: {e}")
 
-# Blockchain Rule Parameters and Compilation (Feature 4)
 st.markdown("---")
 st.subheader("📜 On-Chain Rule Parameter Compiler")
 with st.expander("Show Compiled Solidity Code Parameters"):
@@ -117,7 +112,6 @@ with st.expander("Show Compiled Solidity Code Parameters"):
 pragma solidity ^0.8.0;
 
 contract SupplyChainRuleCheck {{
-    // Automatically compiled parameters for {category or "Electronics"}
     int256 public constant MIN_TEMP = {temp_req[0]};
     int256 public constant MAX_TEMP = {temp_req[1]};
     string public constant CATEGORY = "{category}";
@@ -129,11 +123,9 @@ contract SupplyChainRuleCheck {{
 }}
     """, language="solidity")
 
-# Draft Preview & Hash Anchoring (Features 1, 2, 5)
 st.markdown("---")
 st.subheader("🔍 Cryptographic Pre-Registration Anchor")
 
-import hashlib
 payload_str = f"{name}-{category}-{sku}-{desc}-{temp_req[0]}-{temp_req[1]}"
 payload_hash = hashlib.sha256(payload_str.encode('utf-8')).hexdigest()
 manufacturer_address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"

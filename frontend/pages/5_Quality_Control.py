@@ -1,12 +1,16 @@
 import streamlit as st
 import requests
+import plotly.express as px
+import pandas as pd
+import hashlib
+import os
+
 try:
     from frontend.ui_components import load_custom_css, get_cached_data
 except ModuleNotFoundError:
     from ui_components import load_custom_css, get_cached_data
 load_custom_css()
 
-import os
 API_URL = os.environ.get("API_URL", "http://localhost:8000/api/")
 
 if "token" not in st.session_state or not st.session_state.token:
@@ -31,12 +35,10 @@ headers = {"Authorization": f"Bearer {st.session_state.token}"}
 st.title("Quality Control (QA) 🔍")
 st.markdown("Log quality assurance checks. If an item fails QA or its telemetry data shows safe bounds were exceeded, the Smart Contract will flag it for recall.")
 
-# Fetch data dynamically via Optimized Cache
 products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
 users = get_cached_data(f"{API_URL}supply_chain/users/", "users_cache", headers)
 qa_reports = get_cached_data(f"{API_URL}supply_chain/quality/", "qa_reports_cache", headers)
 
-# Summary Metrics (Components 4, 5, 6)
 if qa_reports:
     total_checks = len(qa_reports)
     passed_checks = sum(1 for q in qa_reports if q['passed'])
@@ -54,21 +56,18 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Log Quality Audit Checkpoint")
-    # QA Form (Component 7)
     with st.form("qa_form"):
-        # Products selectbox (Component 8)
         prod_options = {f"{p['name']} (ID: {p['id']})": p['id'] for p in products}
         selected_prod = st.selectbox("Select Audited Product", list(prod_options.keys()))
         
-        # Inspectors selectbox (Component 9)
         inspector_options = {u['username']: u['id'] for u in users if u['role'] in ['QA', 'ADMIN']}
         selected_inspector = st.selectbox("Assigned Auditor", list(inspector_options.keys()))
         
-        passed = st.checkbox("Verify: Product Meets QA Standards?", value=True) # Component 10
-        score = st.slider("Inspection Score (0-100)", 0, 100, 85) # Component 11
-        notes = st.text_area("Audit Findings & Action Notes", placeholder="Enter notes...") # Component 12
+        passed = st.checkbox("Verify: Product Meets QA Standards?", value=True)
+        score = st.slider("Inspection Score (0-100)", 0, 100, 85)
+        notes = st.text_area("Audit Findings & Action Notes", placeholder="Enter notes...")
         
-        submit_qa = st.form_submit_button("Submit QA Audit Certificate") # Component 13
+        submit_qa = st.form_submit_button("Submit QA Audit Certificate")
         if submit_qa:
             if not selected_prod or not selected_inspector:
                 st.error("Please select both product and inspector.")
@@ -82,7 +81,6 @@ with col1:
                 }
                 res = requests.post(f"{API_URL}supply_chain/quality/", json=qa_data, headers=headers)
                 if res.status_code == 201:
-                    # Invalidate cache
                     st.session_state.pop("qa_reports_cache", None)
                     st.success("QA Report submitted successfully! ✅")
                     if not passed:
@@ -93,9 +91,6 @@ with col1:
 
 with col2:
     st.subheader("QA Inspection Compliance")
-    # Chart (Component 14)
-    import plotly.express as px
-    import pandas as pd
     if qa_reports:
         df_qa = pd.DataFrame(qa_reports)
         pass_fail_counts = df_qa['passed'].value_counts().reset_index()
@@ -113,7 +108,6 @@ with col2:
 st.markdown("---")
 st.subheader("Interactive Quality Assurance Ledger")
 
-# Filter Audit Result (Component 15)
 filter_passed = st.selectbox("Filter Ledger display status", ["All", "Passed Audits", "Failed/Recalled Audits"])
 
 if qa_reports:
@@ -124,10 +118,8 @@ if qa_reports:
         df_ledger = df_ledger[df_ledger['passed'] == False]
         
     if not df_ledger.empty:
-        # Dataframe (Component 16)
         st.dataframe(df_ledger[['id', 'product_name', 'inspector_name', 'passed', 'notes', 'timestamp']], width="stretch")
         
-        # Download (Component 17)
         csv_data = df_ledger.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="📥 Export QA Audit Ledger to CSV",
@@ -140,11 +132,9 @@ if qa_reports:
 else:
     st.info("No QA reports logged yet.")
 
-# 1. Immutable QA Certificate Anchor (Feature 1)
 st.markdown("---")
 st.subheader("🔗 Immutable QA Certificate Anchor")
 if qa_reports:
-    import hashlib
     for q in qa_reports:
         cert_data = f"{q['id']}-{q['product_name']}-{q['passed']}-{q['notes']}"
         cert_hash = hashlib.sha256(cert_data.encode('utf-8')).hexdigest()
@@ -152,7 +142,6 @@ if qa_reports:
 else:
     st.info("No audit certificates to hash yet.")
 
-# 2. Solidity Score Rule Alert (Feature 2)
 st.markdown("---")
 st.subheader("📜 Solidity Audit Score Rules")
 st.markdown("Solidity rule: Inspections with score < 70 are flagged for recall.")
@@ -171,7 +160,6 @@ if qa_reports:
 else:
     st.info("No audit scores to run Solidity rules engine against.")
 
-# 3. Inspector Public Key Verification (Feature 3)
 st.markdown("---")
 with st.expander("🔑 Certified Auditor Public Key Verification", expanded=False):
     st.markdown("Verify the cryptographic credentials of the inspector performing the check:")
@@ -183,7 +171,6 @@ with st.expander("🔑 Certified Auditor Public Key Verification", expanded=Fals
     else:
         st.info("No inspectors to verify.")
 
-# 4. QA Recall Dashboard (Feature 4)
 st.markdown("---")
 st.subheader("🚨 On-Chain Failed Audits Recall Logs")
 failed_audits = [q for q in qa_reports if not q['passed']]
@@ -193,7 +180,6 @@ if failed_audits:
 else:
     st.success("No failed QA recall logs present on-chain. All audits conform to quality guidelines. ✅")
 
-# 5. Block Audit Progression Plot (Feature 5)
 st.markdown("---")
 st.subheader("📈 Block-Height Audit Score progression")
 if qa_reports:

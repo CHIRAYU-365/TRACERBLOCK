@@ -1,9 +1,9 @@
 import json
+import os
 from web3 import Web3
 from solcx import compile_standard, install_solc
 
 def deploy_contract():
-    # Install solc if not installed
     print("Installing solc...")
     install_solc('0.8.0')
     
@@ -38,8 +38,7 @@ def deploy_contract():
         print("Failed to connect to web3 provider.")
         return
         
-    import os
-    chain_id = 1337 # Ganache default chain ID, modify as needed
+    chain_id = 1337
     my_address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
     private_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
     
@@ -55,8 +54,6 @@ def deploy_contract():
     })
     
     signed_txn = w3.eth.account.sign_transaction(transaction, private_key=private_key)
-    
-    # Compatibility with Web3 v5 and v6 attribute names
     raw_tx = getattr(signed_txn, "raw_transaction", getattr(signed_txn, "rawTransaction", None))
     tx_hash = w3.eth.send_raw_transaction(raw_tx)
     
@@ -68,8 +65,7 @@ def deploy_contract():
          contract_address = getattr(tx_receipt, "contract_address", None)
          
     print(f"Contract deployed to address: {contract_address}")
-
-    # Write contract address and config to .env
+    
     env_lines = []
     if os.path.exists(".env"):
         with open(".env", "r") as env_file:

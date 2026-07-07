@@ -5,10 +5,8 @@ import hashlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import sys
 
-# In-Memory Blockchain State
 class BlockchainState:
     def __init__(self):
-        # Genesis block
         genesis_hash = "0x" + hashlib.sha256(b"genesis_block_payload").hexdigest()
         self.blocks = [{
             "number": "0x0",
@@ -38,12 +36,10 @@ class BlockchainState:
         block_number = len(self.blocks)
         timestamp = int(time.time())
         
-        # Calculate unique tx hash
         nonce_val = self.get_nonce(from_addr)
         tx_payload = f"{from_addr}-{nonce_val}-{block_number}-{timestamp}"
         tx_hash = "0x" + hashlib.sha256(tx_payload.encode('utf-8')).hexdigest()
         
-        # Calculate unique block hash linked to parent
         block_payload = f"{block_number}-{parent_block['hash']}-{timestamp}-{tx_hash}"
         block_hash = "0x" + hashlib.sha256(block_payload.encode('utf-8')).hexdigest()
         
@@ -56,7 +52,6 @@ class BlockchainState:
         }
         self.blocks.append(new_block)
         
-        # Generate and save receipt
         receipt = {
             "transactionHash": tx_hash,
             "transactionIndex": "0x0",
@@ -64,23 +59,21 @@ class BlockchainState:
             "blockNumber": hex(block_number),
             "from": from_addr,
             "to": None if is_deployment else self.deployed_contract_address,
-            "cumulativeGasUsed": "0x5208", # 21000 gas
+            "cumulativeGasUsed": "0x5208",
             "gasUsed": "0x5208",
             "contractAddress": self.deployed_contract_address if is_deployment else None,
             "logs": [],
-            "status": "0x1" # Success status
+            "status": "0x1"
         }
         self.receipts[tx_hash] = receipt
         self.increment_nonce(from_addr)
         
         return tx_hash, new_block
 
-# Initialize blockchain state
 state = BlockchainState()
 
 class MockBlockchainHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        # Silence standard HTTP logger logs
         pass
 
     def do_OPTIONS(self):
@@ -92,18 +85,17 @@ class MockBlockchainHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/stats":
-            # Extract last 10 transactions hash list
             tx_list = list(state.receipts.keys())[-10:]
             
             response = {
-                "block_number": state.get_block_number() + 1240, # Add block offset
+                "block_number": state.get_block_number() + 1240,
                 "gas_price_gwei": 20,
                 "peer_count": 8,
                 "node_latency_ms": random.randint(3, 10),
                 "contract_address": state.deployed_contract_address,
                 "transactions": tx_list,
                 "total_transactions": len(state.receipts),
-                "blocks": state.blocks[-5:] # Show last 5 blocks details
+                "blocks": state.blocks[-5:]
             }
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -133,17 +125,15 @@ class MockBlockchainHandler(BaseHTTPRequestHandler):
             elif method == "net_version":
                 result = "1337"
             elif method == "eth_chainId":
-                result = "0x539" # 1337 in hex
+                result = "0x539"
             elif method == "eth_blockNumber":
-                # Return current block number (with offset) in hex
                 result = hex(state.get_block_number() + 1240)
             elif method == "eth_gasPrice":
-                result = hex(20000000000) # 20 Gwei
+                result = hex(20000000000)
             elif method == "eth_getTransactionCount":
                 address = params[0] if len(params) > 0 else "0x0"
                 result = hex(state.get_nonce(address))
             elif method == "eth_sendRawTransaction":
-                # Mine a transaction on the in-memory engine
                 is_contract_deployment = (len(state.receipts) == 0)
                 from_addr = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
                 tx_hash, new_block = state.mine_block(from_addr, is_deployment=is_contract_deployment)
@@ -153,7 +143,6 @@ class MockBlockchainHandler(BaseHTTPRequestHandler):
                 tx_hash = params[0]
                 result = state.receipts.get(tx_hash, None)
                 if not result:
-                    # Provide dynamic fallback receipt if queried hash was from mock seeding
                     result = {
                         "transactionHash": tx_hash,
                         "transactionIndex": "0x0",
@@ -173,7 +162,6 @@ class MockBlockchainHandler(BaseHTTPRequestHandler):
                     result = state.blocks[-1]
                 else:
                     try:
-                        # Convert block number hex to int
                         block_idx = int(block_param, 16) - 1240
                         if 0 <= block_idx < len(state.blocks):
                             result = state.blocks[block_idx]

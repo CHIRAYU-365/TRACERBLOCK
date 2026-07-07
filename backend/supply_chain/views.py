@@ -6,6 +6,8 @@ from .serializers import (ProductSerializer, TrackingEventSerializer, TelemetryS
                           WarehouseSerializer, InventorySerializer, PurchaseOrderSerializer, QualityCheckSerializer, UserSerializer)
 from blockchain.service import log_event_to_blockchain
 from users.models import CustomUser
+from rest_framework.decorators import api_view, permission_classes
+from .ai_insights import predict_stockout, calculate_supplier_score, estimate_carbon_emissions
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
@@ -58,7 +60,6 @@ class TrackingEventViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         event = serializer.save()
         
-        # Log to blockchain
         try:
             tx_hash = log_event_to_blockchain(
                 product_id=event.product.id,
@@ -72,8 +73,6 @@ class TrackingEventViewSet(viewsets.ModelViewSet):
             
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-from rest_framework.decorators import api_view, permission_classes
-from .ai_insights import predict_stockout, calculate_supplier_score, estimate_carbon_emissions
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

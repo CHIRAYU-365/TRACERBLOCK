@@ -6,7 +6,6 @@ try:
 except ModuleNotFoundError:
     from ui_components import load_custom_css, get_cached_data
 import plotly.express as px
-
 import os
 import subprocess
 import time
@@ -15,7 +14,6 @@ import sys
 API_URL = os.environ.get("API_URL", "http://localhost:8000/api/")
 
 def ensure_background_services():
-    # Attempt to query backend to check if already online
     try:
         res = requests.get(f"{API_URL}supply_chain/products/", timeout=1)
         if res.status_code in [200, 401, 403]:
@@ -26,18 +24,15 @@ def ensure_background_services():
     print("[Streamlit Cloud] Port 8000 offline. Spawning background SCM environment...")
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
-    # 1. Start mock blockchain
     blockchain_script = os.path.join(base_dir, "scripts", "mock_blockchain.py")
     if os.path.exists(blockchain_script):
         subprocess.Popen([sys.executable, blockchain_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         time.sleep(1)
         
-    # 2. Compile and Deploy smart contracts
     deploy_script = os.path.join(base_dir, "scripts", "deploy.py")
     if os.path.exists(deploy_script):
         subprocess.run([sys.executable, deploy_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
-    # 3. Run Django migrations, seed data, and launch server
     manage_script = os.path.join(base_dir, "backend", "manage.py")
     if os.path.exists(manage_script):
         subprocess.run([sys.executable, manage_script, "migrate"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -45,7 +40,6 @@ def ensure_background_services():
         subprocess.Popen([sys.executable, manage_script, "runserver", "127.0.0.1:8000"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         time.sleep(2)
 
-# Verify services status
 ensure_background_services()
 
 st.set_page_config(page_title="TRACERBLOCK", layout="wide", page_icon="🔗")
@@ -54,7 +48,6 @@ if "token" not in st.session_state:
     st.session_state.token = None
 
 def login():
-    # Hide sidebar and cover app completely with mask overlay
     st.markdown("""
     <style>
     [data-testid="stSidebar"], [data-testid="stHeader"] {
@@ -65,7 +58,6 @@ def login():
     <div class="login-mask"></div>
     """, unsafe_allow_html=True)
     
-    # Render standard Streamlit input elements inside a floating dialog card
     with st.container():
         st.markdown('<div class="login-popup">', unsafe_allow_html=True)
         st.markdown("<h3 style='margin-top:0; color:#00f2fe; text-align:center;'>🔑 TRACERBLOCK Auth</h3>", unsafe_allow_html=True)
@@ -83,7 +75,6 @@ def login():
                     res = requests.post(f"{API_URL}token/", json={"username": username, "password": password})
                     if res.status_code == 200:
                         st.session_state.token = res.json()["access"]
-                        # Clear caches
                         st.session_state.pop("products_cache", None)
                         st.session_state.pop("inventory_cache", None)
                         st.session_state.pop("orders_cache", None)
@@ -98,7 +89,6 @@ def login():
         st.markdown('</div>', unsafe_allow_html=True)
 
 def dashboard():
-    # Show Blockchain Connection Status Indicator
     st.markdown('<div class="blockchain-indicator">⛓️ Private Blockchain Node: 127.0.0.1:8545</div> <div class="verified-badge">State: ACTIVE</div>', unsafe_allow_html=True)
     
     st.title("Executive Dashboard 📊")
@@ -106,15 +96,12 @@ def dashboard():
     
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
     
-    # Smooth Loader (Optimized UX)
     with st.spinner("🔒 Establishing secure handshake & decrypting SCM ledger records..."):
         try:
-            # Load cached data from APIs (Optimized Buffering)
             products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
             inventory = get_cached_data(f"{API_URL}supply_chain/inventory/", "inventory_cache", headers)
             orders = get_cached_data(f"{API_URL}supply_chain/orders/", "orders_cache", headers)
             
-            # Load Blockchain Node Stats (Feature 1)
             try:
                 node_res = requests.get("http://127.0.0.1:8545/stats")
                 node_stats = node_res.json() if node_res.status_code == 200 else {}
@@ -125,7 +112,6 @@ def dashboard():
             st.stop()
             
     try:
-        # Blockchain Node Stats Metric Cards (Feature 1)
         if node_stats:
             st.markdown("#### 🔗 Live Blockchain Network Monitor")
             ncol1, ncol2, ncol3, ncol4 = st.columns(4)
@@ -135,18 +121,16 @@ def dashboard():
             ncol4.metric("Ecosystem Peer Count", f"{node_stats.get('peer_count', 8)} Nodes")
             st.markdown("---")
 
-        # 3 Business Metrics (Components 3, 4, 5)
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Registered Products", len(products))
         total_stock = sum(item['quantity'] for item in inventory)
         col2.metric("Total Stock (Units)", total_stock)
         col3.metric("Total Orders Placed", len(orders))
         
-        # Off-Chain Gas Savings Calculator (Creative Feature)
         st.markdown("---")
         st.subheader("⚡ Off-Chain State Channel Optimization (Gas Savings)")
         st.markdown("Estimates gas costs and USD fees saved by offloading intermediate telemetry sensor check-ins from the root chain:")
-        saved_txs = len(products) * 4 # Simulated count of telemetry ticks offloaded
+        saved_txs = len(products) * 4
         saved_gas = saved_txs * 21000
         saved_eth = (saved_gas * 20) / 1e9
         saved_usd = saved_eth * 3200.0
@@ -156,7 +140,6 @@ def dashboard():
         scol2.metric("Equivalent Gas Fees Saved", f"{saved_eth:.4f} ETH")
         scol3.metric("Cost Savings Value (USD)", f"${saved_usd:,.2f} USD")
         
-        # Smart Contract Recall Board (Feature 3)
         recalled_ids = []
         for p in products:
             has_breach = False
@@ -169,7 +152,6 @@ def dashboard():
                 
         st.markdown("---")
         st.markdown("### Blockchain Safety Alerts")
-        # Solidity Recall Board component
         if recalled_ids:
             st.error(f"⚠️ **Solidity Contract Recall Triggered:** Cold-chain rules violated for the following items:")
             for item in recalled_ids:
@@ -177,7 +159,6 @@ def dashboard():
         else:
             st.success("Solidity Engine State: No on-chain recalls registered. All contract rules satisfied. ✅")
 
-        # Global Ledger Transaction & Block Registry (Feature 2 & Real Block details)
         with st.expander("📝 Global Ledger Transaction & Mined Blocks Registry", expanded=False):
             st.markdown("Below are the last cryptographic transactions and newly mined blocks recorded on the private ledger:")
             
@@ -185,7 +166,6 @@ def dashboard():
             if blocks_history:
                 st.markdown("#### 📦 Recently Mined Blocks")
                 for b in reversed(blocks_history):
-                    # Format timestamp
                     ts_val = int(b.get("timestamp", "0x0"), 16)
                     import time
                     time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts_val))
@@ -202,21 +182,17 @@ def dashboard():
         st.markdown("### Interactive Filters & Analytics")
         filter_col1, filter_col2 = st.columns(2)
         
-        # Warehouse Filter (Component 6)
         with filter_col1:
             warehouses_list = list(set(item['warehouse_name'] for item in inventory))
             selected_wh = st.selectbox("Filter Inventory Chart by Warehouse", ["All"] + warehouses_list)
         
-        # Order Status Filter (Component 7)
         with filter_col2:
             status_list = list(set(item['status'] for item in orders))
             selected_status = st.selectbox("Filter Orders by Status", ["All"] + status_list)
 
-        # Plotly Charts with filters applied
         chart_col1, chart_col2 = st.columns(2)
         
         with chart_col1:
-            # Hierarchical Sunburst Plot SCM (Creative visual upgrade)
             st.markdown("#### Sunburst SCM Stock Distribution")
             sunburst_records = []
             for item in inventory:
@@ -260,15 +236,13 @@ def dashboard():
                                      title="Order Fulfillment Distribution",
                                      color_discrete_sequence=px.colors.qualitative.Safe)
                     fig_ord.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)")
-                    # Component 9
                     st.plotly_chart(fig_ord, width="stretch")
                 else:
                     st.info("No orders found matching the filter.")
             else:
                 st.info("No order data available.")
 
-        # On-Chain Activity Velocity Chart (Feature 4)
-        st.markdown("### On-Chain Node Metrics")
+        st.markdown("### On-Chain Activity Velocity")
         block_activity = {}
         for p in products:
             for ev in p.get('events', []):
@@ -285,7 +259,6 @@ def dashboard():
         else:
             st.info("Insufficient transactional traffic to map activity velocity yet.")
 
-        # Node Explorer / Hash Auditor (Feature 5)
         st.markdown("#### 🔍 Node Explorer / Cryptographic Hash Auditor")
         audit_hash = st.text_input("Enter Transaction Hash to Verify Node Validity", placeholder="e.g. 0xeef08a9f6...")
         if audit_hash:
@@ -303,18 +276,15 @@ def dashboard():
             else:
                 st.error("❌ Cryptographic signature match failed: Transaction hash not recorded on active node.")
 
-        # Low Stock Advisor (Component 10 & 11)
         low_stock_items = [item for item in inventory if item['quantity'] <= item.get('low_stock_threshold', 10)]
         with st.expander("⚠️ Critical Stock Alerts & Reorder Advisor", expanded=True):
             if low_stock_items:
                 st.warning("The following products are at or below their minimum safety stock threshold. Reordering is recommended.")
                 df_low = pd.DataFrame(low_stock_items)[['product_name', 'warehouse_name', 'quantity', 'low_stock_threshold']]
-                # Component 11
                 st.dataframe(df_low, width="stretch")
             else:
                 st.success("All inventory levels are currently healthy and above safety thresholds! ✅")
 
-        # Export (Component 12)
         st.markdown("### Export Portal Data")
         if inventory:
             df_export = pd.DataFrame(inventory)
