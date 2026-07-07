@@ -727,8 +727,12 @@ def render_quality_control(headers):
     else:
         st.info("No telemetry logs to map quality progression.")
 
-def render_ai_insights(headers):
+def render_ai_insights(headers, role):
     st.subheader("AI & Analytics Command Center")
+    if role != "ADMIN":
+        st.info("ℹ️ ZTNA Notice: AI demand forecasting model parameters, supplier trust rating calculations, and carbon footprint diagnostics are restricted to SCM Administrators only.")
+        return
+        
     st.markdown("Leveraging predictive algorithms to optimize supply chain pipelines.")
     
     products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
@@ -897,8 +901,12 @@ def render_ecosystem_map(headers):
     else:
         st.info("No warehouse coordinates parsed.")
 
-def render_smart_contracts(headers):
+def render_smart_contracts(headers, role):
     st.subheader("Smart Contracts Registry")
+    if role != "ADMIN":
+        st.info("ℹ️ ZTNA Notice: Bytecode compilations, deploy structures, and smart contract configuration values are restricted to SCM Administrators only.")
+        return
+        
     st.markdown("Audits deployed smart contracts, bytecode parameters, and execution gas limits.")
     
     col1, col2, col3 = st.columns(3)
@@ -936,8 +944,12 @@ def render_smart_contracts(headers):
             st.write(f"**Gas Limit:** {c['Gas Allocation Limit']} Units")
             st.markdown("---")
 
-def render_compliance_reports(headers):
+def render_compliance_reports(headers, role):
     st.subheader("Audit & Compliance Reports")
+    if role != "ADMIN":
+        st.info("ℹ️ ZTNA Notice: Detailed quality audit summaries, carbon offset receipts, and compliance spreadsheets are restricted to SCM Administrators only.")
+        return
+        
     st.markdown("Download verified quality logs, carbon token receipts, and SCM provenance histories.")
     
     products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
@@ -1108,39 +1120,25 @@ else:
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
     active = st.session_state.active_tab
     
-    allowed_roles = clearance_policy.get(active, [])
-    if curr_role_display not in allowed_roles:
-        st.markdown(f"""
-        <div style="background-color: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 12px; padding: 32px; margin-top: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
-            <h3 style="color: #ef4444; margin-top: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🛡️ ZTNA Access Denied</h3>
-            <p style="color: #f8fafc; font-size: 0.95rem; margin-top: 12px;">
-                Your authenticated profile role <strong>{curr_role_display}</strong> is not permitted to view SCM segment: <strong>{active}</strong>.
-            </p>
-            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0;">
-                Policy Rule: Continuous ZTNA segmentation limits your access to authorized segments only. Contact your SCM security team to request level elevation.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        if active == "Executive Dashboard":
-            render_dashboard(headers)
-        elif active == "Register Product":
-            render_register_product(headers)
-        elif active == "Track & Update":
-            render_track_product(headers)
-        elif active == "Inventory Management":
-            render_inventory_management(headers)
-        elif active == "Order Management":
-            render_order_management(headers, curr_role_display)
-        elif active == "Quality Control":
-            render_quality_control(headers)
-        elif active == "AI & Insights":
-            render_ai_insights(headers)
-        elif active == "Ecosystem Telemetry":
-            render_ecosystem_map(headers)
-        elif active == "Smart Contracts":
-            render_smart_contracts(headers)
-        elif active == "Compliance Reports":
-            render_compliance_reports(headers)
-        elif active == "User Profile":
-            render_user_profile(headers, curr_role_display)
+    if active == "Executive Dashboard":
+        render_dashboard(headers)
+    elif active == "Register Product":
+        render_register_product(headers)
+    elif active == "Track & Update":
+        render_track_product(headers)
+    elif active == "Inventory Management":
+        render_inventory_management(headers)
+    elif active == "Order Management":
+        render_order_management(headers, curr_role_display)
+    elif active == "Quality Control":
+        render_quality_control(headers)
+    elif active == "AI & Insights":
+        render_ai_insights(headers, curr_role_display)
+    elif active == "Ecosystem Telemetry":
+        render_ecosystem_map(headers)
+    elif active == "Smart Contracts":
+        render_smart_contracts(headers, curr_role_display)
+    elif active == "Compliance Reports":
+        render_compliance_reports(headers, curr_role_display)
+    elif active == "User Profile":
+        render_user_profile(headers, curr_role_display)
