@@ -165,29 +165,7 @@ def load_custom_css():
         display: inline-block !important;
     }
 
-    .login-mask {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: #0f172a !important;
-        z-index: 999990 !important;
-    }
-    
-    .login-popup {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 400px;
-        background: #1e293b !important;
-        border: 1px solid #334155 !important;
-        border-radius: 12px !important;
-        padding: 32px !important;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-        z-index: 999999 !important;
-    }
+
 
     [data-testid="stSidebar"] button[kind="secondary"] {
         background: transparent !important;

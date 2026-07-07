@@ -78,14 +78,22 @@ def login():
         display: none !important;
         visibility: hidden !important;
     }
+    .login-card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 32px;
+        margin-top: 80px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
     </style>
-    <div class="login-mask"></div>
     """, unsafe_allow_html=True)
     
-    with st.container():
-        st.markdown('<div class="login-popup">', unsafe_allow_html=True)
+    col_left, col_center, col_right = st.columns([1, 2, 1])
+    with col_center:
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown("<h3 style='margin-top:0; color:#3b82f6; text-align:center;'>🔑 Roho SCM</h3>", unsafe_allow_html=True)
-        st.markdown("<p style='color:#94a3b8; text-align:center; font-size:0.85rem;'>Security Access Lock & Secure Enclosure</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#94a3b8; text-align:center; font-size:0.85rem; margin-bottom: 24px;'>Security Access Lock & Secure Enclosure</p>", unsafe_allow_html=True)
         
         with st.form("login_form", clear_on_submit=False):
             username = st.text_input("Username", key="login_username")
@@ -112,7 +120,6 @@ def login():
                             st.error("Invalid credentials")
                     except Exception as e:
                         st.error("Auth server offline. Start backend server first.")
-                    
         st.markdown('</div>', unsafe_allow_html=True)
 
 def render_dashboard(headers):
