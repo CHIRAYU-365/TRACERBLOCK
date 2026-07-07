@@ -217,6 +217,12 @@ def load_custom_css():
         z-index: 999999 !important;
     }
 
+    [data-testid="stForm"] {
+        border: none !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
     @keyframes pageFadeIn {
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }

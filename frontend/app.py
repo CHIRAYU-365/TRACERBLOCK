@@ -63,28 +63,29 @@ def login():
         st.markdown("<h3 style='margin-top:0; color:#00f2fe; text-align:center;'>🔑 TRACERBLOCK Auth</h3>", unsafe_allow_html=True)
         st.markdown("<p style='color:#94a3b8; text-align:center; font-size:0.85rem;'>Security Access Lock & Secure Enclosure</p>", unsafe_allow_html=True)
         
-        username = st.text_input("Username", key="login_username")
-        password = st.text_input("Password", type="password", key="login_password")
-        submit = st.button("Unlock Portal & Decrypt Ledger", use_container_width=True)
-        
-        if submit:
-            if not username or not password:
-                st.error("Fields cannot be empty.")
-            else:
-                try:
-                    res = requests.post(f"{API_URL}token/", json={"username": username, "password": password})
-                    if res.status_code == 200:
-                        st.session_state.token = res.json()["access"]
-                        st.session_state.pop("products_cache", None)
-                        st.session_state.pop("inventory_cache", None)
-                        st.session_state.pop("orders_cache", None)
-                        st.session_state.pop("users_cache", None)
-                        st.success("Authorized! ✅")
-                        st.rerun()
-                    else:
-                        st.error("Invalid credentials")
-                except Exception as e:
-                    st.error("Auth server offline. Start backend server first.")
+        with st.form("login_form", clear_on_submit=False):
+            username = st.text_input("Username", key="login_username")
+            password = st.text_input("Password", type="password", key="login_password")
+            submit = st.form_submit_button("Unlock Portal & Decrypt Ledger", use_container_width=True)
+            
+            if submit:
+                if not username or not password:
+                    st.error("Fields cannot be empty.")
+                else:
+                    try:
+                        res = requests.post(f"{API_URL}token/", json={"username": username, "password": password})
+                        if res.status_code == 200:
+                            st.session_state.token = res.json()["access"]
+                            st.session_state.pop("products_cache", None)
+                            st.session_state.pop("inventory_cache", None)
+                            st.session_state.pop("orders_cache", None)
+                            st.session_state.pop("users_cache", None)
+                            st.success("Authorized! ✅")
+                            st.rerun()
+                        else:
+                            st.error("Invalid credentials")
+                    except Exception as e:
+                        st.error("Auth server offline. Start backend server first.")
                     
         st.markdown('</div>', unsafe_allow_html=True)
 
