@@ -20,6 +20,19 @@ class Command(BaseCommand):
 
         self.stdout.write("Ensuring seeder users are registered...")
         # Create seeder accounts with secure defaults if not present
+        admin_user, _ = CustomUser.objects.get_or_create(
+            username='admin',
+            defaults={
+                'role': 'ADMIN',
+                'email': 'admin@tracerblock.com',
+                'organization': 'TracerBlock HQ'
+            }
+        )
+        admin_user.set_password('admin')
+        admin_user.is_staff = True
+        admin_user.is_superuser = True
+        admin_user.save()
+
         manufacturer, _ = CustomUser.objects.get_or_create(
             username='manufacturer_seeder',
             defaults={
