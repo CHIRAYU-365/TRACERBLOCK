@@ -1,7 +1,10 @@
 import streamlit as st
 import requests
 import pandas as pd
-from frontend.ui_components import load_custom_css
+try:
+    from frontend.ui_components import load_custom_css
+except ModuleNotFoundError:
+    from ui_components import load_custom_css
 import plotly.express as px
 
 import os
