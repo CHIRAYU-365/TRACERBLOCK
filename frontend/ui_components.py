@@ -189,6 +189,47 @@ def load_custom_css():
         z-index: 999999 !important;
     }
 
+    [data-testid="stSidebar"] button[kind="secondary"] {
+        background: transparent !important;
+        color: #94a3b8 !important;
+        border: none !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+        box-shadow: none !important;
+        padding: 10px 16px !important;
+        width: 100% !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+    }
+    [data-testid="stSidebar"] button[kind="secondary"]:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #f8fafc !important;
+    }
+    
+    [data-testid="stSidebar"] button[kind="primary"] {
+        background: rgba(59, 130, 246, 0.15) !important;
+        color: #3b82f6 !important;
+        border: 1px solid rgba(59, 130, 246, 0.3) !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+        box-shadow: none !important;
+        padding: 10px 16px !important;
+        width: 100% !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+    }
+    
+    .menu-header {
+        font-size: 0.7rem !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        text-transform: uppercase !important;
+        margin-top: 18px !important;
+        margin-bottom: 6px !important;
+        letter-spacing: 0.5px !important;
+        padding-left: 12px !important;
+    }
+
     [data-testid="stForm"] {
         border: none !important;
         padding: 0 !important;

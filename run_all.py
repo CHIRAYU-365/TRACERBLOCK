@@ -1,37 +1,33 @@
 import subprocess
 import time
 import sys
+import os
+import shutil
 
 def run_project():
     print("Starting TRACERBLOCK services concurrently...")
     
-    # 0. Start Mock Blockchain
-    print("Starting Mock Ethereum Blockchain Server...")
+    pages_dir = os.path.join(os.path.dirname(__file__), "frontend", "pages")
+    if os.path.exists(pages_dir):
+        try:
+            shutil.rmtree(pages_dir)
+        except Exception:
+            pass
+            
     blockchain_process = subprocess.Popen([sys.executable, "scripts/mock_blockchain.py"])
-    time.sleep(1.5) # Wait for RPC server to start
+    time.sleep(1.5)
 
-    # 1. Run Migrations
-    print("Running Django migrations...")
     subprocess.run([sys.executable, "backend/manage.py", "makemigrations", "supply_chain"])
     subprocess.run([sys.executable, "backend/manage.py", "migrate"])
     
-    # 2. Deploy Contracts
-    print("Deploying smart contracts...")
     subprocess.run([sys.executable, "scripts/deploy.py"])
 
-    # 3. Start Django Backend
-    print("Starting Django backend...")
     backend_process = subprocess.Popen([sys.executable, "backend/manage.py", "runserver"])
-    
-    # Wait 3 seconds to ensure API is ready
     time.sleep(3)
     
-    # 4. Start Streamlit Frontend
-    print("Starting Streamlit frontend...")
     frontend_process = subprocess.Popen([sys.executable, "-m", "streamlit", "run", "frontend/app.py"])
     
     try:
-        # Wait for processes
         backend_process.wait()
         frontend_process.wait()
     except KeyboardInterrupt:
