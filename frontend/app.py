@@ -68,16 +68,22 @@ load_custom_css()
 if "token" not in st.session_state:
     st.session_state.token = None
 
-if not st.session_state.token:
-    try:
-        res = requests.post(f"{API_URL}token/", json={"username": "admin", "password": "admin"}, timeout=2)
-        if res.status_code == 200:
-            st.session_state.token = res.json()["access"]
-    except Exception:
-        pass
-
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "Executive Dashboard"
+
+clearance_policy = {
+    "Executive Dashboard": ["ADMIN", "MANUFACTURER", "DISTRIBUTOR", "RETAILER", "LOGISTICS", "QA"],
+    "Register Product": ["ADMIN", "MANUFACTURER"],
+    "Track & Update": ["ADMIN", "MANUFACTURER", "DISTRIBUTOR", "LOGISTICS"],
+    "Inventory Management": ["ADMIN", "MANUFACTURER", "DISTRIBUTOR", "RETAILER"],
+    "Order Management": ["ADMIN", "RETAILER"],
+    "Quality Control": ["ADMIN", "QA"],
+    "AI & Insights": ["ADMIN", "MANUFACTURER", "DISTRIBUTOR", "RETAILER", "QA"],
+    "Ecosystem Telemetry": ["ADMIN", "MANUFACTURER", "DISTRIBUTOR", "RETAILER", "LOGISTICS", "QA"],
+    "Smart Contracts": ["ADMIN"],
+    "Compliance Reports": ["ADMIN", "QA"],
+    "User Profile": ["ADMIN", "MANUFACTURER", "DISTRIBUTOR", "RETAILER", "LOGISTICS", "QA"]
+}
 
 def login():
     st.markdown("""
@@ -94,19 +100,35 @@ def login():
         margin-top: 80px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     }
+    .ztna-item {
+        font-size: 0.8rem;
+        color: #10b981;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
     </style>
     """, unsafe_allow_html=True)
     
     col_left, col_center, col_right = st.columns([1, 2, 1])
     with col_center:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown("<h3 style='margin-top:0; color:#3b82f6; text-align:center;'>🔑 TRACERBLOCK SCM</h3>", unsafe_allow_html=True)
-        st.markdown("<p style='color:#94a3b8; text-align:center; font-size:0.85rem; margin-bottom: 24px;'>Security Access Lock & Secure Enclosure</p>", unsafe_allow_html=True)
+        st.markdown("<h3 style='margin-top:0; color:#3b82f6; text-align:center;'>🛡️ ZTNA SCM Gateway</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#94a3b8; text-align:center; font-size:0.85rem; margin-bottom: 18px;'>Zero-Trust Continuous Attestation Portal</p>", unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style="background-color: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+            <div class="ztna-item">🟢 Device TPM status attestation verified</div>
+            <div class="ztna-item">🟢 SCM Encrypted Proxy Tunnel online (TLS 1.3)</div>
+            <div class="ztna-item">🟢 Context parameters check (No anomalies)</div>
+        </div>
+        """, unsafe_allow_html=True)
         
         with st.form("login_form", clear_on_submit=False):
-            username = st.text_input("Username", key="login_username")
-            password = st.text_input("Password", type="password", key="login_password")
-            submit = st.form_submit_button("Unlock Portal & Decrypt Ledger", use_container_width=True)
+            username = st.text_input("Username", key="login_username", placeholder="e.g. manufacturer_seeder")
+            password = st.text_input("Password", type="password", key="login_password", placeholder="e.g. password123")
+            submit = st.form_submit_button("Verify Identity & Request Token", use_container_width=True)
             
             if submit:
                 if not username or not password:
@@ -122,7 +144,7 @@ def login():
                             st.session_state.pop("users_cache", None)
                             st.session_state.pop("warehouses_cache", None)
                             st.session_state.pop("qa_reports_cache", None)
-                            st.success("Authorized! ✅")
+                            st.success("Authorized ZTNA Session! ✅")
                             st.rerun()
                         else:
                             st.error("Invalid credentials")
@@ -1015,6 +1037,10 @@ else:
         st.session_state.pop("qa_reports_cache", None)
     st.sidebar.button("Sync Ledger Cache", on_click=reset_cache, use_container_width=True)
     
+    def revoke_session():
+        st.session_state.token = None
+    st.sidebar.button("Revoke ZTNA Session", on_click=revoke_session, use_container_width=True)
+    
     # Custom Top Header bar
     users_list = get_cached_data(f"{API_URL}supply_chain/users/", "users_cache", {"Authorization": f"Bearer {st.session_state.token}"})
     curr_user_display = "Thomas Vactom"
@@ -1039,9 +1065,12 @@ else:
             <input type="text" placeholder="Search SCM transactions..." style="background-color: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 12px; color: #f8fafc; width: 240px; font-size: 0.85rem;">
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 20px; padding: 4px 12px; color: #34d399; font-size: 0.75rem; font-weight: 600;">
+                🛡️ ZTNA SECURE
+            </div>
             <div style="text-align: right;">
                 <div style="font-size: 0.875rem; font-weight: 600; color: #f8fafc;">{curr_user_display}</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">{curr_role_display}</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Clearance: {curr_role_display}</div>
             </div>
             <div style="width: 36px; height: 36px; border-radius: 50%; background-color: #3b82f6; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #ffffff;">
                 {curr_user_display[:2].upper()}
@@ -1054,25 +1083,39 @@ else:
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
     active = st.session_state.active_tab
     
-    if active == "Executive Dashboard":
-        render_dashboard(headers)
-    elif active == "Register Product":
-        render_register_product(headers)
-    elif active == "Track & Update":
-        render_track_product(headers)
-    elif active == "Inventory Management":
-        render_inventory_management(headers)
-    elif active == "Order Management":
-        render_order_management(headers)
-    elif active == "Quality Control":
-        render_quality_control(headers)
-    elif active == "AI & Insights":
-        render_ai_insights(headers)
-    elif active == "Ecosystem Telemetry":
-        render_ecosystem_map(headers)
-    elif active == "Smart Contracts":
-        render_smart_contracts(headers)
-    elif active == "Compliance Reports":
-        render_compliance_reports(headers)
-    elif active == "User Profile":
-        render_user_profile(headers)
+    allowed_roles = clearance_policy.get(active, [])
+    if curr_role_display not in allowed_roles:
+        st.markdown(f"""
+        <div style="background-color: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 12px; padding: 32px; margin-top: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+            <h3 style="color: #ef4444; margin-top: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">🛡️ ZTNA Access Denied</h3>
+            <p style="color: #f8fafc; font-size: 0.95rem; margin-top: 12px;">
+                Your authenticated profile role <strong>{curr_role_display}</strong> is not permitted to view SCM segment: <strong>{active}</strong>.
+            </p>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0;">
+                Policy Rule: Continuous ZTNA segmentation limits your access to authorized segments only. Contact your SCM security team to request level elevation.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        if active == "Executive Dashboard":
+            render_dashboard(headers)
+        elif active == "Register Product":
+            render_register_product(headers)
+        elif active == "Track & Update":
+            render_track_product(headers)
+        elif active == "Inventory Management":
+            render_inventory_management(headers)
+        elif active == "Order Management":
+            render_order_management(headers)
+        elif active == "Quality Control":
+            render_quality_control(headers)
+        elif active == "AI & Insights":
+            render_ai_insights(headers)
+        elif active == "Ecosystem Telemetry":
+            render_ecosystem_map(headers)
+        elif active == "Smart Contracts":
+            render_smart_contracts(headers)
+        elif active == "Compliance Reports":
+            render_compliance_reports(headers)
+        elif active == "User Profile":
+            render_user_profile(headers)

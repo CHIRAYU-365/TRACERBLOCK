@@ -7,6 +7,10 @@ def get_cached_data(url, cache_key, headers):
             res = requests.get(url, headers=headers)
             if res.status_code == 200:
                 st.session_state[cache_key] = res.json()
+            elif res.status_code in [401, 403]:
+                st.session_state.token = None
+                st.session_state.pop(cache_key, None)
+                st.rerun()
             else:
                 st.session_state[cache_key] = []
         except Exception:
