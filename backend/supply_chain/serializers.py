@@ -49,3 +49,10 @@ class QualityCheckSerializer(serializers.ModelSerializer):
     class Meta:
         model = QualityCheck
         fields = '__all__'
+
+from users.models import CustomUser
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'role', 'organization', 'first_name', 'last_name']

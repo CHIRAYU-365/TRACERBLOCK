@@ -5,6 +5,11 @@ import sys
 def run_project():
     print("Starting TRACERBLOCK services concurrently...")
     
+    # 0. Start Mock Blockchain
+    print("Starting Mock Ethereum Blockchain Server...")
+    blockchain_process = subprocess.Popen([sys.executable, "scripts/mock_blockchain.py"])
+    time.sleep(1.5) # Wait for RPC server to start
+
     # 1. Run Migrations
     print("Running Django migrations...")
     subprocess.run([sys.executable, "backend/manage.py", "makemigrations", "supply_chain"])
@@ -33,6 +38,7 @@ def run_project():
         print("\nShutting down TRACERBLOCK services...")
         backend_process.terminate()
         frontend_process.terminate()
+        blockchain_process.terminate()
         print("Services stopped.")
 
 if __name__ == "__main__":

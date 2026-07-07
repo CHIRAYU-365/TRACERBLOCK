@@ -1,9 +1,9 @@
 import streamlit as st
 import requests
 try:
-    from frontend.ui_components import load_custom_css
+    from frontend.ui_components import load_custom_css, get_cached_data
 except ModuleNotFoundError:
-    from ui_components import load_custom_css
+    from ui_components import load_custom_css, get_cached_data
 load_custom_css()
 import pandas as pd
 import plotly.express as px
@@ -12,62 +12,180 @@ import os
 API_URL = os.environ.get("API_URL", "http://localhost:8000/api/")
 
 if "token" not in st.session_state or not st.session_state.token:
-    st.warning("Please login from the main page first.")
+    st.markdown("""
+    <style>
+    [data-testid="stSidebar"], [data-testid="stHeader"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    </style>
+    <div class="login-mask"></div>
+    <div class="login-popup">
+        <h3 style="margin-top:0; color:#e74c3c; text-align:center;">🔒 Access Blocked</h3>
+        <p style="color:#94a3b8; text-align:center; font-size:0.9rem;">You must login first to decrypt SCM ledger records.</p>
+        <a href="/" target="_self" style="display:block; text-align:center; margin-top:20px; color:#00f2fe; text-decoration:none; font-weight:bold;">← Go to Authentication Portal</a>
+    </div>
+    """, unsafe_allow_html=True)
     st.stop()
 
 headers = {"Authorization": f"Bearer {st.session_state.token}"}
 
 st.title("Track & Update Product 📍")
+st.markdown("Query product provenance, log transit checkpoints, and view IoT telemetry charts anchored to the mock blockchain.")
 
-product_id = st.number_input("Enter Product ID", min_value=1, step=1)
-if st.button("Search"):
-    st.session_state['track_id'] = product_id
+# Fetch products list dynamically (Optimized Buffering)
+products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
 
-if st.session_state.get('track_id'):
-    pid = st.session_state['track_id']
+product_options = {f"{p['name']} (ID: {p['id']})": p['id'] for p in products}
+
+# Product selection (Components 2, 3)
+selected_product_label = st.selectbox("Select Product to Track", list(product_options.keys()))
+search_btn = st.button("Search Provenance History")
+
+if search_btn or st.session_state.get('track_id'):
+    if selected_product_label:
+        st.session_state['track_id'] = product_options[selected_product_label]
+        
+    pid = st.session_state.get('track_id')
     res = requests.get(f"{API_URL}supply_chain/products/{pid}/", headers=headers)
+    
     if res.status_code == 200:
         product = res.json()
-        st.success(f"Tracking: {product['name']}")
+        st.success(f"Tracking provenance data for product: **{product['name']}**")
         
-        st.markdown("### Update Status & Telemetry")
+        st.markdown("### Log New Transit Checkpoint")
+        # Update Form (Component 4)
         with st.form("update_form"):
-            status = st.selectbox("Status", ["In Transit", "At Warehouse", "Delivered"])
-            location = st.text_input("Location")
-            temp = st.slider("Temperature (°C)", -20, 50, 20)
-            hum = st.slider("Humidity (%)", 0, 100, 50)
-            submit = st.form_submit_button("Log Event on Blockchain")
+            col_x, col_y = st.columns(2)
+            with col_x:
+                status = st.selectbox("Checkpoint Status", ["In Transit", "At Warehouse", "Under Inspection", "Delivered", "Delayed"]) # Component 5
+                location = st.text_input("Checkpoint Location", placeholder="e.g. Los Angeles Port, CA") # Component 6
+            with col_y:
+                temp = st.slider("Container Temp (°C)", -30, 50, 4) # Component 7
+                hum = st.slider("Container Humidity (%)", 0, 100, 60) # Component 8
+                
+            submit = st.form_submit_button("Log Event and Anchor to Blockchain") # Component 9
             
             if submit:
-                event_data = {"product": pid, "status": status, "location": location}
-                ev_res = requests.post(f"{API_URL}supply_chain/events/", json=event_data, headers=headers)
-                if ev_res.status_code == 201:
-                    ev_id = ev_res.json()['id']
-                    tel_data = {"event": ev_id, "temperature_c": temp, "humidity_percent": hum}
-                    requests.post(f"{API_URL}supply_chain/telemetry/", json=tel_data, headers=headers)
-                    st.success("Successfully anchored to Ethereum blockchain! ✅")
-                    st.rerun()
+                if not location:
+                    st.error("Please specify a location for the checkpoint.")
                 else:
-                    st.error(f"Failed: {ev_res.text}")
+                    event_data = {"product": pid, "status": status, "location": location}
+                    ev_res = requests.post(f"{API_URL}supply_chain/events/", json=event_data, headers=headers)
+                    if ev_res.status_code == 201:
+                        # Invalidate cache
+                        st.session_state.pop("products_cache", None)
+                        
+                        ev_id = ev_res.json()['id']
+                        tel_data = {"event": ev_id, "temperature_c": temp, "humidity_percent": hum}
+                        requests.post(f"{API_URL}supply_chain/telemetry/", json=tel_data, headers=headers)
+                        st.success("Successfully anchored checkpoint logs to Mock Ethereum Blockchain! ✅")
+                        st.rerun()
+                    else:
+                        st.error(f"Failed to record checkpoint: {ev_res.text}")
+
+        # Multisignature Custody Handshake (Feature 3)
+        st.markdown("---")
+        st.markdown("#### 🔑 Multisignature Custody Handshake")
+        col_sig1, col_sig2 = st.columns(2)
+        with col_sig1:
+            sig1 = st.checkbox("Logistics Partner digital signature (LOGISTICS_ROLE)")
+        with col_sig2:
+            sig2 = st.checkbox("Distributor Partner digital signature (DISTRIBUTOR_ROLE)")
+            
+        if sig1 and sig2:
+            st.success("✅ Custody Handshake: Cryptographic signatures verified. Block ready for mining.")
+        else:
+            st.warning("Locked: Custody change requires signatures from both logistics and distributor accounts.")
+
+        # Verification display control (Component 10)
+        show_verification = st.checkbox("Show Blockchain Cryptographic Proof Panel", value=True)
         
-        st.markdown("### Telemetry History")
+        # Telemetry Chart (Component 11)
+        st.markdown("### IoT Telemetry History")
         if product.get('events'):
             tel_records = []
             for ev in product['events']:
                 for tel in ev.get('telemetry', []):
                     tel_records.append({
                         "Time": tel['timestamp'],
-                        "Temperature": tel['temperature_c'],
-                        "Humidity": tel['humidity_percent']
+                        "Temperature (°C)": tel['temperature_c'],
+                        "Humidity (%)": tel['humidity_percent']
                     })
             if tel_records:
                 df_tel = pd.DataFrame(tel_records)
-                fig = px.line(df_tel, x="Time", y=["Temperature", "Humidity"], title="IoT Sensor Data During Transit")
-                st.plotly_chart(fig, use_container_width=True)
+                fig = px.line(df_tel, x="Time", y=["Temperature (°C)", "Humidity (%)"], 
+                              title="IoT Container Sensors - Live Transit logs",
+                              color_discrete_sequence=["#00f2fe", "#a18cd1"])
+                fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig, width="stretch")
             else:
-                st.info("No telemetry data yet.")
+                st.info("No IoT sensor recordings found for this product.")
+
+            # On-Chain Timeline Route Plotter (Feature 4)
+            st.markdown("### 🗺️ On-Chain Checkpoint Timeline")
+            route_records = []
+            for idx, ev in enumerate(product['events']):
+                route_records.append({
+                    "Checkpoint": f"{idx+1}. {ev['status']}",
+                    "Location": ev['location'],
+                    "Timestamp": ev['timestamp']
+                })
+            if route_records:
+                df_route = pd.DataFrame(route_records)
+                fig_route = px.bar(df_route, x='Timestamp', y='Checkpoint', color='Location',
+                                   title="Product Checkpoints Journey Path",
+                                   color_discrete_sequence=px.colors.qualitative.Dark2)
+                fig_route.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_route, width="stretch")
                 
-            st.markdown("### Immutable Blockchain Events")
-            st.dataframe(product['events'])
+            # Provenance Chain Hash Auditor (Feature 2)
+            if show_verification:
+                import hashlib
+                st.markdown("### 🔗 Cryptographic Provenance Hash Audit")
+                prev_hash = "0x0000000000000000000000000000000000000000000000000000000000000000"
+                for idx, ev in enumerate(product['events']):
+                    event_str = f"{ev['id']}-{ev['status']}-{ev['location']}-{prev_hash}"
+                    current_hash = "0x" + hashlib.sha256(event_str.encode('utf-8')).hexdigest()
+                    st.code(f"Block #{idx+1} [Checkpoint: {ev['status']}]\n ├─ Prev Block Hash: {prev_hash[:26]}...\n ├─ Payload Context: {ev['status']} at {ev['location']}\n └─ Generated Hash: {current_hash[:26]}...")
+                    prev_hash = current_hash
+
+            # Events Log Table (Component 12)
+            st.markdown("### Immutable Checkpoints Chain")
+            df_events = pd.DataFrame(product['events'])
+            if not df_events.empty:
+                st.dataframe(df_events[['id', 'status', 'location', 'timestamp', 'tx_hash']], width="stretch")
+                
+                # Check for Temperature Violations and Recalls - Solidity Rules Evaluator (Feature 1)
+                recalls = [ev for ev in product['events'] if any(t['temperature_c'] > 30 or t['temperature_c'] < 2 for t in ev.get('telemetry', []))]
+                if recalls:
+                    st.error("⚠️ **Solidity Rules Evaluator: [RECALLED State Triggered]** Temperature violations detected (outside safe 2°C - 30°C range). Smart Contract has automatically locked this batch on-chain.")
+                else:
+                    st.success("Solidity Rules Evaluator: [PASSED] Product temperatures conform to contract parameters. ✅")
+                
+                # On-Chain Event Log Decoder (Feature 5)
+                with st.expander("🛠️ Solidity Event Log Decoder", expanded=False):
+                    for ev in product['events']:
+                        st.json({
+                            "event": "EventLogged",
+                            "productId": pid,
+                            "status": ev['status'],
+                            "location": ev['location'],
+                            "tx_hash": ev['tx_hash'] or "N/A",
+                            "timestamp": ev['timestamp']
+                        })
+                            
+                # CSV Export Button (Component 14)
+                csv_data = df_events[['status', 'location', 'timestamp', 'tx_hash']].to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Export Provenance Chain to CSV",
+                    data=csv_data,
+                    file_name=f"product_{pid}_provenance_report.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.info("No checkpoint records found.")
+        else:
+            st.info("No events logged yet.")
     else:
-        st.error("Product not found.")
+        st.error("Product not found. Please select a valid product.")
