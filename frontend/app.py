@@ -87,10 +87,22 @@ clearance_policy = {
 
 def login():
     st.markdown("""
+    <div class="login-mask"></div>
     <style>
     [data-testid="stSidebar"], [data-testid="stHeader"] {
         display: none !important;
         visibility: hidden !important;
+    }
+    .login-mask {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.7) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        z-index: 999990 !important;
     }
     .login-card {
         background-color: #1e293b;
@@ -99,6 +111,15 @@ def login():
         padding: 32px;
         margin-top: 80px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        position: relative;
+    }
+    div[data-testid="stVerticalBlock"]:has(.login-card) {
+        position: relative !important;
+        z-index: 999995 !important;
+    }
+    div[data-testid="stColumn"]:has(.login-card) {
+        position: relative !important;
+        z-index: 999996 !important;
     }
     .ztna-item {
         font-size: 0.8rem;
@@ -526,7 +547,7 @@ def render_inventory_management(headers):
     else:
         st.info("No telemetry indices mapped.")
 
-def render_order_management(headers):
+def render_order_management(headers, role):
     st.subheader("Order Management")
     st.markdown("Initiate procurement cycles, issue purchase orders (PO), and manage escrow/fulfillment states.")
     
@@ -595,26 +616,27 @@ def render_order_management(headers):
     else:
         st.info("No active PO expiries to monitor.")
 
-    st.markdown("---")
-    with st.expander("⚖️ Escrow Dispute Arbitrator (Admin override)", expanded=False):
-        st.markdown("Emergency override capability to unlock escrow funds in case of disputes:")
-        disputed_orders = {f"Order #{o['id']} ({o['status']})": o['id'] for o in orders if o['status'] in ['PENDING', 'APPROVED', 'REJECTED']}
-        if disputed_orders:
-            selected_disp = st.selectbox("Select disputed order to override", list(disputed_orders.keys()))
-            override_action = st.selectbox("Arbiter Command", ["Unlock Escrow (Refund Buyer)", "Release Escrow (Pay Seller)"])
-            if st.button("Execute Arbitration Command"):
-                st.success(f"Arbitration executed! Order #{disputed_orders[selected_disp]} escrow status has been resolved.")
-        else:
-            st.info("No active orders in disputable states.")
+    if role == "ADMIN":
+        st.markdown("---")
+        with st.expander("⚖️ Escrow Dispute Arbitrator (Admin override)", expanded=False):
+            st.markdown("Emergency override capability to unlock escrow funds in case of disputes:")
+            disputed_orders = {f"Order #{o['id']} ({o['status']})": o['id'] for o in orders if o['status'] in ['PENDING', 'APPROVED', 'REJECTED']}
+            if disputed_orders:
+                selected_disp = st.selectbox("Select disputed order to override", list(disputed_orders.keys()))
+                override_action = st.selectbox("Arbiter Command", ["Unlock Escrow (Refund Buyer)", "Release Escrow (Pay Seller)"])
+                if st.button("Execute Arbitration Command"):
+                    st.success(f"Arbitration executed! Order #{disputed_orders[selected_disp]} escrow status has been resolved.")
+            else:
+                st.info("No active orders in disputable states.")
 
-    st.markdown("---")
-    st.subheader("📈 Order Compliance Analytics")
-    delivered_orders_comp = [o for o in orders if o['status'] == 'DELIVERED']
-    if delivered_orders_comp:
-        for o in delivered_orders_comp:
-            st.markdown(f"**Order #{o['id']} SLA Compliance:** ⭐ **95/100** (Delivered in 4 blocks | On-Time)")
-    else:
-        st.info("Fulfill orders to view SLA performance scores.")
+        st.markdown("---")
+        st.subheader("📈 Order Compliance Analytics")
+        delivered_orders_comp = [o for o in orders if o['status'] == 'DELIVERED']
+        if delivered_orders_comp:
+            for o in delivered_orders_comp:
+                st.markdown(f"**Order #{o['id']} SLA Compliance:** ⭐ **95/100** (Delivered in 4 blocks | On-Time)")
+        else:
+            st.info("Fulfill orders to view SLA performance scores.")
 
 def render_quality_control(headers):
     st.subheader("Quality Control (QA)")
@@ -956,7 +978,7 @@ def render_compliance_reports(headers):
     else:
         st.info("No compliance records parsed.")
 
-def render_user_profile(headers):
+def render_user_profile(headers, role):
     st.subheader("User Profile & Key Registry")
     st.markdown("Cryptographic key assignments, SCM organization metadata, and role claims.")
     
@@ -985,8 +1007,11 @@ def render_user_profile(headers):
             st.warning("Could not extract active profile from JWT token claims.")
             
         st.markdown("---")
-        st.subheader("SCM Key Registry (Role Authorizations)")
-        st.dataframe(users, use_container_width=True)
+        if role == "ADMIN":
+            st.subheader("SCM Key Registry (Role Authorizations)")
+            st.dataframe(users, use_container_width=True)
+        else:
+            st.info("ℹ️ ZTNA Notice: Directory listing of all other SCM users is restricted to SCM Administrators only.")
     else:
         st.info("No active registry credentials retrieved.")
 
@@ -1106,7 +1131,7 @@ else:
         elif active == "Inventory Management":
             render_inventory_management(headers)
         elif active == "Order Management":
-            render_order_management(headers)
+            render_order_management(headers, curr_role_display)
         elif active == "Quality Control":
             render_quality_control(headers)
         elif active == "AI & Insights":
@@ -1118,4 +1143,4 @@ else:
         elif active == "Compliance Reports":
             render_compliance_reports(headers)
         elif active == "User Profile":
-            render_user_profile(headers)
+            render_user_profile(headers, curr_role_display)
