@@ -1006,7 +1006,10 @@ def render_user_profile(headers, role):
             current_user = next((u for u in users if u["id"] == user_id), None)
             if current_user:
                 current_username = current_user["username"]
-        except Exception:
+        except Exception as e:
+            st.error(f"JWT/Profile Retrieve Error: {e}")
+            import traceback
+            st.code(traceback.format_exc())
             current_user = None
             
         if current_user:
