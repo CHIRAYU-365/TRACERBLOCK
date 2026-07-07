@@ -34,14 +34,12 @@ def load_custom_css():
     }
 
     [data-testid="stSidebar"] {
-        background-color: rgba(10, 10, 15, 0.7) !important;
+        background-color: rgba(10, 10, 15, 0.95) !important;
         margin: 16px !important;
         border-radius: 24px !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
         height: calc(100vh - 32px) !important;
         border: 1px solid rgba(139, 92, 246, 0.15) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
     }
     
     [data-testid="stSidebarCollapseButton"] {
@@ -87,11 +85,10 @@ def load_custom_css():
     }
 
     div[data-testid="stMetric"] {
-        background: rgba(18, 18, 28, 0.65) !important;
+        background: rgba(18, 18, 28, 0.95) !important;
         border: 1px solid rgba(139, 92, 246, 0.15) !important;
         border-radius: 24px !important;
         padding: 24px !important;
-        backdrop-filter: blur(20px) !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }

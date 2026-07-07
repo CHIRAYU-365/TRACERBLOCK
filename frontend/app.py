@@ -45,7 +45,9 @@ def ensure_background_services():
             subprocess.Popen([sys.executable, manage_script, "runserver", "127.0.0.1:8000"], stdout=log_file, stderr=log_file)
             time.sleep(2)
 
-ensure_background_services()
+if "background_services_started" not in st.session_state:
+    ensure_background_services()
+    st.session_state.background_services_started = True
 
 st.set_page_config(page_title="TRACERBLOCK", layout="wide", page_icon="🔗")
 
