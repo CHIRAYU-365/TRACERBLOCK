@@ -23,22 +23,27 @@ def ensure_background_services():
         
     print("[Streamlit Cloud] Port 8000 offline. Spawning background SCM environment...")
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    log_file_path = os.path.join(base_dir, "background_services.log")
     
-    blockchain_script = os.path.join(base_dir, "scripts", "mock_blockchain.py")
-    if os.path.exists(blockchain_script):
-        subprocess.Popen([sys.executable, blockchain_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(1)
+    with open(log_file_path, "a") as log_file:
+        log_file.write(f"--- Booting Environment at {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+        log_file.flush()
         
-    deploy_script = os.path.join(base_dir, "scripts", "deploy.py")
-    if os.path.exists(deploy_script):
-        subprocess.run([sys.executable, deploy_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-    manage_script = os.path.join(base_dir, "backend", "manage.py")
-    if os.path.exists(manage_script):
-        subprocess.run([sys.executable, manage_script, "migrate"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run([sys.executable, manage_script, "populate_db"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.Popen([sys.executable, manage_script, "runserver", "127.0.0.1:8000"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(2)
+        blockchain_script = os.path.join(base_dir, "scripts", "mock_blockchain.py")
+        if os.path.exists(blockchain_script):
+            subprocess.Popen([sys.executable, blockchain_script], stdout=log_file, stderr=log_file)
+            time.sleep(1)
+            
+        deploy_script = os.path.join(base_dir, "scripts", "deploy.py")
+        if os.path.exists(deploy_script):
+            subprocess.run([sys.executable, deploy_script], stdout=log_file, stderr=log_file)
+            
+        manage_script = os.path.join(base_dir, "backend", "manage.py")
+        if os.path.exists(manage_script):
+            subprocess.run([sys.executable, manage_script, "migrate"], stdout=log_file, stderr=log_file)
+            subprocess.run([sys.executable, manage_script, "populate_db"], stdout=log_file, stderr=log_file)
+            subprocess.Popen([sys.executable, manage_script, "runserver", "127.0.0.1:8000"], stdout=log_file, stderr=log_file)
+            time.sleep(2)
 
 ensure_background_services()
 

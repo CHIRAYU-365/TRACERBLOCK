@@ -28,9 +28,8 @@ class Command(BaseCommand):
                 'organization': 'Apex Biotech & Cybernetics'
             }
         )
-        if _:
-            manufacturer.set_password('password123')
-            manufacturer.save()
+        manufacturer.set_password('password123')
+        manufacturer.save()
 
         distributor, _ = CustomUser.objects.get_or_create(
             username='distributor_seeder',
@@ -40,9 +39,8 @@ class Command(BaseCommand):
                 'organization': 'Global Cold-Chain Logistics'
             }
         )
-        if _:
-            distributor.set_password('password123')
-            distributor.save()
+        distributor.set_password('password123')
+        distributor.save()
 
         retailer, _ = CustomUser.objects.get_or_create(
             username='retailer_seeder',
@@ -52,9 +50,8 @@ class Command(BaseCommand):
                 'organization': 'Cornerstone Pharmacy & Retail'
             }
         )
-        if _:
-            retailer.set_password('password123')
-            retailer.save()
+        retailer.set_password('password123')
+        retailer.save()
 
         qa_inspector, _ = CustomUser.objects.get_or_create(
             username='inspector_seeder',
@@ -64,9 +61,8 @@ class Command(BaseCommand):
                 'organization': 'Federal Standards Authority'
             }
         )
-        if _:
-            qa_inspector.set_password('password123')
-            qa_inspector.save()
+        qa_inspector.set_password('password123')
+        qa_inspector.save()
 
         logistics_provider, _ = CustomUser.objects.get_or_create(
             username='logistics_seeder',
@@ -76,9 +72,8 @@ class Command(BaseCommand):
                 'organization': 'Trans-Global Air Cargo'
             }
         )
-        if _:
-            logistics_provider.set_password('password123')
-            logistics_provider.save()
+        logistics_provider.set_password('password123')
+        logistics_provider.save()
 
         self.stdout.write("Creating 5 primary SCM warehouse facilities...")
         warehouses_data = [
