@@ -554,22 +554,58 @@ def render_order_management(headers, role):
     products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
     users = get_cached_data(f"{API_URL}supply_chain/users/", "users_cache", headers)
     orders = get_cached_data(f"{API_URL}supply_chain/orders/", "orders_cache", headers)
+    
+    # Inject mock unit_price if missing
+    for o in orders:
+        if "unit_price" not in o or o["unit_price"] is None:
+            o["unit_price"] = 150.0
+
     if orders:
+        st.subheader("Active Order States")
+        order_cards = []
         for o in orders:
-            if 'unit_price' not in o:
-                o['unit_price'] = 150.0
+            price_val = o.get("unit_price", 150.0)
+            total_price = o["quantity"] * price_val
+            card_html = f"""
+            <div class="custom-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:700; color:#3b82f6; font-size:1rem;">PO #{o['id']}</span>
+                    <span class="status-badge status-{o['status'].lower()}">{o['status']}</span>
+                </div>
+                <div style="margin-top:12px; font-size:0.875rem; color:#94a3b8;">
+                    <div><strong>Product:</strong> {o.get('product_name', 'N/A')}</div>
+                    <div><strong>Quantity:</strong> {o['quantity']} units</div>
+                    <div><strong>Unit Price:</strong> ${price_val:,.2f}</div>
+                    <div style="margin-top:4px; font-weight:600; color:#f8fafc;">Total Price: ${total_price:,.2f} USD</div>
+                </div>
+            </div>
+            """
+            order_cards.append(card_html)
+        
+        # Render cards in grids
+        for i in range(0, len(order_cards), 3):
+            cols = st.columns(3)
+            for j, card in enumerate(order_cards[i:i+3]):
+                cols[j].markdown(card, unsafe_allow_html=True)
     
-    st.subheader("Register Purchase Order")
-    prod_options = {f"{p['name']} (ID: {p['id']})": p['id'] for p in products}
-    partner_options = {u['username']: u['id'] for u in users if u['role'] in ['DISTRIBUTOR', 'RETAILER', 'ADMIN']}
+    st.markdown("---")
+    st.subheader("Initiate Procurement Cycles")
     
-    if prod_options and partner_options:
-        with st.form("create_po_form"):
-            selected_prod = st.selectbox("Select Product", list(prod_options.keys()))
+    if products and users:
+        prod_options = {p["name"]: p["id"] for p in products}
+        partner_options = {u["username"]: u["id"] for u in users if u["role"] in ["DISTRIBUTOR", "RETAILER"]}
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            selected_prod = st.selectbox("Select Product to Order", list(prod_options.keys()))
             selected_buyer = st.selectbox("Select SCM Partner (Buyer)", list(partner_options.keys()))
-            quantity = st.number_input("Purchase Quantity", min_value=1, value=100, step=10)
+        with col2:
+            quantity = st.number_input("Order Quantity", min_value=1, value=10, step=1)
             price = st.number_input("Unit Price ($)", min_value=0.1, value=15.0, step=1.0)
             
+            # Standard form
+        with st.form("po_form"):
+            st.write("Confirm PO parameters:")
             submit = st.form_submit_button("Initiate Purchase Order")
             if submit:
                 po_data = {
@@ -603,7 +639,6 @@ def render_order_management(headers, role):
             st.info(f"**Escrow for PO #{o['id']}:** Locked Value: **${total_escrow_val:,.2f} USD** | State: `{escrow_status}`")
     else:
         st.info("No escrow details available.")
-
     st.markdown("---")
     st.subheader("⌛ Procurement Expiry Monitor")
     st.markdown("Contract rule: POs expire if not APPROVED within **30 blocks** of creation.")
@@ -616,27 +651,26 @@ def render_order_management(headers, role):
     else:
         st.info("No active PO expiries to monitor.")
 
-    if role == "ADMIN":
-        st.markdown("---")
-        with st.expander("⚖️ Escrow Dispute Arbitrator (Admin override)", expanded=False):
-            st.markdown("Emergency override capability to unlock escrow funds in case of disputes:")
-            disputed_orders = {f"Order #{o['id']} ({o['status']})": o['id'] for o in orders if o['status'] in ['PENDING', 'APPROVED', 'REJECTED']}
-            if disputed_orders:
-                selected_disp = st.selectbox("Select disputed order to override", list(disputed_orders.keys()))
-                override_action = st.selectbox("Arbiter Command", ["Unlock Escrow (Refund Buyer)", "Release Escrow (Pay Seller)"])
-                if st.button("Execute Arbitration Command"):
-                    st.success(f"Arbitration executed! Order #{disputed_orders[selected_disp]} escrow status has been resolved.")
-            else:
-                st.info("No active orders in disputable states.")
-
-        st.markdown("---")
-        st.subheader("📈 Order Compliance Analytics")
-        delivered_orders_comp = [o for o in orders if o['status'] == 'DELIVERED']
-        if delivered_orders_comp:
-            for o in delivered_orders_comp:
-                st.markdown(f"**Order #{o['id']} SLA Compliance:** ⭐ **95/100** (Delivered in 4 blocks | On-Time)")
+    st.markdown("---")
+    with st.expander("⚖️ Escrow Dispute Arbitrator (Admin override)", expanded=False):
+        st.markdown("Emergency override capability to unlock escrow funds in case of disputes:")
+        disputed_orders = {f"Order #{o['id']} ({o['status']})": o['id'] for o in orders if o['status'] in ['PENDING', 'APPROVED', 'REJECTED']}
+        if disputed_orders:
+            selected_disp = st.selectbox("Select disputed order to override", list(disputed_orders.keys()))
+            override_action = st.selectbox("Arbiter Command", ["Unlock Escrow (Refund Buyer)", "Release Escrow (Pay Seller)"])
+            if st.button("Execute Arbitration Command"):
+                st.success(f"Arbitration executed! Order #{disputed_orders[selected_disp]} escrow status has been resolved.")
         else:
-            st.info("Fulfill orders to view SLA performance scores.")
+            st.info("No active orders in disputable states.")
+
+    st.markdown("---")
+    st.subheader("📈 Order Compliance Analytics")
+    delivered_orders_comp = [o for o in orders if o['status'] == 'DELIVERED']
+    if delivered_orders_comp:
+        for o in delivered_orders_comp:
+            st.markdown(f"**Order #{o['id']} SLA Compliance:** ⭐ **95/100** (Delivered in 4 blocks | On-Time)")
+    else:
+        st.info("Fulfill orders to view SLA performance scores.")
 
 def render_quality_control(headers):
     st.subheader("Quality Control (QA)")
