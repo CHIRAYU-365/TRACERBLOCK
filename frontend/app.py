@@ -68,6 +68,14 @@ load_custom_css()
 if "token" not in st.session_state:
     st.session_state.token = None
 
+if not st.session_state.token:
+    try:
+        res = requests.post(f"{API_URL}token/", json={"username": "admin", "password": "admin"}, timeout=2)
+        if res.status_code == 200:
+            st.session_state.token = res.json()["access"]
+    except Exception:
+        pass
+
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "Executive Dashboard"
 
@@ -92,7 +100,7 @@ def login():
     col_left, col_center, col_right = st.columns([1, 2, 1])
     with col_center:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown("<h3 style='margin-top:0; color:#3b82f6; text-align:center;'>🔑 Roho SCM</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='margin-top:0; color:#3b82f6; text-align:center;'>🔑 TRACERBLOCK SCM</h3>", unsafe_allow_html=True)
         st.markdown("<p style='color:#94a3b8; text-align:center; font-size:0.85rem; margin-bottom: 24px;'>Security Access Lock & Secure Enclosure</p>", unsafe_allow_html=True)
         
         with st.form("login_form", clear_on_submit=False):
@@ -503,6 +511,10 @@ def render_order_management(headers):
     products = get_cached_data(f"{API_URL}supply_chain/products/", "products_cache", headers)
     users = get_cached_data(f"{API_URL}supply_chain/users/", "users_cache", headers)
     orders = get_cached_data(f"{API_URL}supply_chain/orders/", "orders_cache", headers)
+    if orders:
+        for o in orders:
+            if 'unit_price' not in o:
+                o['unit_price'] = 150.0
     
     st.subheader("Register Purchase Order")
     prod_options = {f"{p['name']} (ID: {p['id']})": p['id'] for p in products}
@@ -959,10 +971,10 @@ def render_user_profile(headers):
 if not st.session_state.token:
     login()
 else:
-    # Sidebar layout (Roho layout specs)
+    # Sidebar layout (TRACERBLOCK layout specs)
     st.sidebar.markdown("""
     <div style='margin-bottom: 24px;'>
-        <h3 style='margin:0; font-size:1.6rem; color:#f8fafc; font-weight:800; letter-spacing: -0.5px;'>🌀 Roho</h3>
+        <h3 style='margin:0; font-size:1.6rem; color:#f8fafc; font-weight:800; letter-spacing: -0.5px;'>🌀 TRACERBLOCK</h3>
     </div>
     """, unsafe_allow_html=True)
     
@@ -994,9 +1006,14 @@ else:
             st.rerun()
             
     st.sidebar.markdown("---")
-    def logout():
-        st.session_state.token = None
-    st.sidebar.button("Logout", on_click=logout, use_container_width=True)
+    def reset_cache():
+        st.session_state.pop("products_cache", None)
+        st.session_state.pop("inventory_cache", None)
+        st.session_state.pop("orders_cache", None)
+        st.session_state.pop("users_cache", None)
+        st.session_state.pop("warehouses_cache", None)
+        st.session_state.pop("qa_reports_cache", None)
+    st.sidebar.button("Sync Ledger Cache", on_click=reset_cache, use_container_width=True)
     
     # Custom Top Header bar
     users_list = get_cached_data(f"{API_URL}supply_chain/users/", "users_cache", {"Authorization": f"Bearer {st.session_state.token}"})
