@@ -999,9 +999,9 @@ def render_user_profile(headers, role):
             
         if current_user:
             st.subheader("Your SCM Profile Details")
-            st.markdown(f"**Username:** {current_user['username']}")
-            st.markdown(f"**Role Access:** `{current_user['role']}`")
-            st.markdown(f"**Email:** {current_user['email']}")
+            st.markdown(f"**Username:** {current_user.get('username', 'N/A')}")
+            st.markdown(f"**Role Access:** `{current_user.get('role', 'N/A')}`")
+            st.markdown(f"**Email:** {current_user.get('email', 'N/A')}")
             st.markdown(f"**Associated SCM Organization:** {current_user.get('organization', 'Individual Operator')}")
         else:
             st.warning("Could not extract active profile from JWT token claims.")
